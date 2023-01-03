@@ -27,6 +27,8 @@ while ~airON
     end
 end
 
+COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignored by git)
+
 %% Setup (runs once before the first trial)
 
 mouse = BpodSystem.Status.CurrentSubjectName;
@@ -162,7 +164,7 @@ end
 LoadSerialMessages('ValveModule1', ValveMessages);  % Set serial messages for valve module. Valve 1 is the default that is normally on
 
 %% Set up WavePlayer (Analog Output Module for controlling lasers)
-W = BpodWavePlayer('COM4'); % Make sure the COM port is correct
+W = BpodWavePlayer(COM_Ports.COM_Port{strcmp(COM_Ports.Module,'BpodWavePlayer')}); % Make sure the COM port is correct
 SR = 10000; % Sampling rate for analog output
 W.SamplingRate = SR;
 W.OutputRange = '0V:5V';

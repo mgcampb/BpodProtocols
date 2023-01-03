@@ -31,9 +31,9 @@ end
 
 mouse = BpodSystem.Status.CurrentSubjectName;
 
-NumRewardTrials1 = 10;
-NumOdorTrials = 0; % Number of odor trials
-NumRewardTrials2 = 10;
+NumRewardTrials1 = 20;
+NumOdorTrials = 120; % Number of odor trials
+NumRewardTrials2 = 20;
 NumOptoStimTrials = 10; % unpredicted opto stim (to compare to predicted)
 
 BpodSystem.Data.TaskDescription = 'Rewards1 OdorTrials Rewards2 UnpredOptoStim';
@@ -162,7 +162,9 @@ end
 LoadSerialMessages('ValveModule1', ValveMessages);  % Set serial messages for valve module. Valve 1 is the default that is normally on
 
 %% Set up WavePlayer (Analog Output Module for controlling lasers)
-W = BpodWavePlayer('COM4'); % Make sure the COM port is correct
+COM_Ports = readtable('..\COM_Ports.txt'); % get COM port from text file (ignored by git)
+idx = ;
+W = BpodWavePlayer(COM_Ports.COM_Ports{idx}); % Make sure the COM port is correct
 SR = 10000; % Sampling rate for analog output
 W.SamplingRate = SR;
 W.OutputRange = '0V:5V';
