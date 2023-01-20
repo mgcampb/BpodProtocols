@@ -6,18 +6,18 @@ global BpodSystem
 
 %% Setup (runs once before the first trial)
 
-MaxTrials = 20; % Max number of trials
+MaxTrials = 30; % Max number of trials
 
 % Task parameters
 S = BpodSystem.ProtocolSettings; % contains valve order for this mouse in field OdorValvesOdor
 
-S.NumOdors = 2;
+S.NumOdors = 3;
 S.NumLaser = 2;
 S.OdorValvesOrder = 1:S.NumOdors;
 
 % These parameters are shared across animals:
 S.ForeperiodDuration = 0.5; % seconds
-S.OdorDuration = 1; % seconds
+S.OdorDuration = 0.5; % seconds
 S.TraceDuration = 0.5; % seconds
 S.NumLaserPulse = 5; % number of laser pulses to deliver after trace period
 S.LaserPulseDuration = 0.01; % seconds

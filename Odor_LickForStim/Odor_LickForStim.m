@@ -38,7 +38,8 @@ COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignor
 
 mouse = BpodSystem.Status.CurrentSubjectName;
 
-NumTrials = 80; % Number of trials
+NumOdorTrials = 120; % Number of trials
+NumOptoStimTrials = 10; % unpredicted opto stim (to check stim is working, compare to stim following licks)
 % TrialType1: Odor -> Lick for VS opto stim
 % TrialType2: Odor -> Nothing
 % In addition, rewards are delivered at random times in some trials
@@ -56,7 +57,9 @@ if isempty(fieldnames(S))
         '\nGenerating new default parameters.\n******\n']);
     S.NumOdors = input('Number of odors: ');
     S.NumLaser = input('Number of lasers: ');
-    S.OdorValvesOrder = randperm(S.NumOdors);
+    S.OdorValvesOrder = input('Odor valve order (use brackets): ');
+    % S.OdorValvesOrder = randperm(S.NumOdors);
+    assert(S.NumOdors == numel(S.OdorValvesOrder),'S.NumOdors must match numel(S.OdorValvesOrder)');
     SaveProtocolSettings(S);
 end
 
@@ -64,8 +67,8 @@ end
 S.Experimenter = 'Malcolm';
 S.Mouse = mouse;
 S.ForeperiodDuration = 0.5; % seconds
-S.OdorDuration = 3; % seconds; total time that the odor is on (including pre period)
-S.OdorPreDuration = 0.5; % seconds; minimum time after odor onset that mouse can lick for stim
+S.OdorDuration = 0.5; % seconds
+S.LickWindowDuration = 3; % seconds; window after odor offset in which animal can lick for stimulation
 S.StimProbability = 1.0; % probability of receiving opto stim if lick during odor on laser trials
 S.TrialsPerReward_Ceiling = 1.5; % Reward is delivered at a random time, a bit less than once per this number of trials; should be at least 1
 
@@ -82,17 +85,17 @@ S.RewardAmount = 4;
 % display parameters
 fprintf('\nSession parameters:\n')
 S
-fprintf('NumTrials = %d\n',NumTrials);
+fprintf('NumOdorTrials = %d\nNumOptoStimTrials = %d\n',NumOdorTrials,NumOptoStimTrials);
 
 % Get opto stim duration
 OptoStimDuration = S.NumLaserPulse/S.LaserPulseFrequency; % in sec
 
 
-%% Define trial types
+%% Define odor trial types
 
 % Also define omission trials
-ChunkSize = 10; % trials; chunk size in which to balance odor trial types
-NumChunks = ceil(NumTrials/ChunkSize);
+ChunkSize = 12; % trials; chunk size in which to balance odor trial types
+NumChunks = ceil(NumOdorTrials/ChunkSize);
 
 TrialTypesChunk = repmat(1:S.NumOdors,1,ChunkSize/S.NumOdors);
 StimTrialsChunk = [ones(1,round(ChunkSize * S.StimProbability)) ...
@@ -107,18 +110,32 @@ for i = 1:NumChunks
     TrialTypes = [TrialTypes TrialTypesChunk(perm_idx1)];
     StimTrials = [StimTrials StimTrialsChunk(perm_idx1)];
 end
-TrialTypes = TrialTypes(1:NumTrials);
-StimTrials = StimTrials(1:NumTrials);
+TrialTypes = TrialTypes(1:NumOdorTrials);
+StimTrials = StimTrials(1:NumOdorTrials);
 StimTrials(TrialTypes>S.NumLaser) = 0; % trial types with no laser stim
+
+
+%% Define optostim trial types
+
+ChunkSize = S.NumLaser;
+NumChunks = NumOptoStimTrials/ChunkSize;
+assert(rem(NumChunks,1)==0);
+assert(rem(ChunkSize,S.NumLaser)==0);
+OptoStimTrialTypes = [];
+for i = 1:NumChunks
+    OptoStimTrialTypes_this = repmat(1:S.NumLaser,1,ChunkSize/S.NumLaser);
+    OptoStimTrialTypes_this = OptoStimTrialTypes_this(randperm(ChunkSize));
+    OptoStimTrialTypes = [OptoStimTrialTypes OptoStimTrialTypes_this];
+end
 
 
 %% Pokes plot
 state_colors = struct( ...
     'Foreperiod',[.9,.9,.9],...
-    'CS1_pre', [0 1 1],...
-    'CS1_lick', [0 1 1],...
-    'CS2_pre', [1 0 1],...
-    'CS2_lick', [1 0 1],...
+    'CS1', [0 1 1],...
+    'CS2', [0 0 1],...
+    'CS3', [1 0 1],...
+    'LickWindow', [1 1 1],...
     'Laser', [1 0 0],...
     'ITI', [.9,.9,.9]);
 PokesPlotLicksSlow('init', state_colors, []);
@@ -153,10 +170,10 @@ WavePlayerMessages = [WavePlayerMessages {''}]; % Do nothing
 LoadSerialMessages('WavePlayer1', WavePlayerMessages);
 
 
-%% Trials
+%% Odor trials
 tic
-fprintf('\nTrials\n');
-for currentTrial = 1:NumTrials
+fprintf('\nOdor trials\n');
+for currentTrial = 1:NumOdorTrials
     
     TrialType = TrialTypes(currentTrial);
     StimTrial = StimTrials(currentTrial);
@@ -165,7 +182,7 @@ for currentTrial = 1:NumTrials
     RewardValveTime = GetValveTimes(RewardAmount, 1);
     
     % Compute variables for this trial's state machine:
-    CS_state = sprintf('CS%d_pre',TrialType);
+    CS_state = sprintf('CS%d',TrialType);
     ValveMessage = TrialType+1;
     LaserMessage = min(TrialType,S.NumLaser+1);
     if StimTrial==1
@@ -181,13 +198,8 @@ for currentTrial = 1:NumTrials
     end
 
     % Get time of random reward
-    MaxTrialDuration = S.ForeperiodDuration+S.OdorDuration+S.ITIMax;
+    MaxTrialDuration = S.ForeperiodDuration+S.OdorDuration+S.LickWindowDuration+S.ITIMax;
     RewardTime = unifrnd(0,MaxTrialDuration*S.TrialsPerReward_Ceiling);
-    
-    % So that ITI is the same for Odor and NoOdor trials:
-    if ~contains(CS_state,'CS')
-        ITIDuration = ITIDuration + S.OdorDuration;
-    end
     
     % Display trial type
     fprintf('\tTrial %d:\tTrialType%d\tLaser%d\tOdor%d\tStim=%d ITI=%0.1fs\n',...
@@ -195,24 +207,24 @@ for currentTrial = 1:NumTrials
     
     % Create state matrix
     sma = NewStateMatrix();
-    sma = SetGlobalTimer(sma, 'TimerID', 1, 'Duration', RewardValveTime, 'OnsetDelay', RewardTime, 'Channel', 'Valve1',...
-        'OnMessage', 1, 'OffMessage', 0); 
+    sma = SetGlobalTimer(sma, 'TimerID', 1, 'Duration', RewardValveTime, 'OnsetDelay', RewardTime,...
+        'Channel', 'Valve1','OnMessage', 1, 'OffMessage', 0); 
     sma = AddState(sma, 'Name', 'Foreperiod',...
         'Timer', S.ForeperiodDuration,...
         'StateChangeConditions', {'Tup', CS_state},...
         'OutputActions', {'BNC1', 1, 'BNC2', 1,'GlobalTimerTrig', 1});
     for tt = 1:S.NumOdors
-        sma = AddState(sma, 'Name', sprintf('CS%d_pre',tt),...
-            'Timer', S.OdorPreDuration,...
-            'StateChangeConditions', {'Tup', sprintf('CS%d_lick',tt)},...
-            'OutputActions', {'ValveModule1', ValveMessage,... % closes the blank valve, opens the odor valve (odor ON)
-                'BNC1', 1, 'BNC2', 1}); 
-        sma = AddState(sma, 'Name', sprintf('CS%d_lick',tt),...
-            'Timer', S.OdorDuration-S.OdorPreDuration,...
-            'StateChangeConditions', {'Port1In', OutcomeState,'Tup', 'ITI'},...
+        sma = AddState(sma, 'Name', sprintf('CS%d',tt),...
+            'Timer', S.OdorDuration,...
+            'StateChangeConditions', {'Tup', 'LickWindow'},...
             'OutputActions', {'ValveModule1', ValveMessage,... % closes the blank valve, opens the odor valve (odor ON)
                 'BNC1', 1, 'BNC2', 1}); 
     end
+    sma = AddState(sma, 'Name', 'LickWindow',...
+        'Timer', S.LickWindowDuration,...
+        'StateChangeConditions', {'Port1In', OutcomeState,'Tup', 'ITI'},...
+        'OutputActions', {'ValveModule1', 1,... % opens the blank valve, closes the odor valve (odor OFF)
+            'BNC1', 1, 'BNC2', 1}); 
     sma = AddState(sma, 'Name', 'Laser',...
         'Timer', OptoStimDuration,...
         'StateChangeConditions', {'Tup', 'ITI'},...
@@ -254,7 +266,74 @@ for currentTrial = 1:NumTrials
     
 end
 
-fprintf('\nProtocol finished\n')
+fprintf('Odor trials finished\n');
 toc;
+
+pause(15);
+
+%% Opto stim trials
+fprintf('\nOptoStim\n');
+for currentTrial = 1:NumOptoStimTrials
+
+    % Calculate ITI for this trial
+    ITIDuration = exprnd(S.ITIMean-S.ITIMin) + S.ITIMin;
+    if ITIDuration > S.ITIMax
+        ITIDuration = S.ITIMax;
+    end
+
+    % Which laser channel to trigger
+    LaserMessage = OptoStimTrialTypes(currentTrial);
+
+    fprintf('\tTrial %d:\tLaser%d\tITI=%0.1fs\n',currentTrial,LaserMessage,ITIDuration);
+
+    %--- Assemble state machine
+    sma = NewStateMatrix();
+    
+    sma = AddState(sma,'Name','Foreperiod',...
+        'Timer',S.ForeperiodDuration,...
+        'StateChangeConditions',{'Tup','Laser'},...
+        'OutputActions',{'BNC1',1,'BNC2',1});
+    sma = AddState(sma, 'Name', 'Laser',...
+        'Timer', OptoStimDuration,...
+        'StateChangeConditions', {'Tup', 'ITI'},...
+        'OutputActions', {'WavePlayer1', LaserMessage, 'BNC1', 0, 'BNC2', 0});
+    sma = AddState(sma, 'Name', 'ITI', ... 
+        'Timer', ITIDuration,...
+        'StateChangeConditions', {'Tup','exit'},...
+        'OutputActions', {'BNC1',0,'BNC2',0});
+
+    % Add the odor states so that pokes plot doesn't get messed up:
+    for tt = 1:S.NumOdors
+        sma = AddState(sma, 'Name', sprintf('CS%d',tt),'Timer', 0,'StateChangeConditions',{},'OutputActions', {}); 
+    end   
+    sma = AddState(sma, 'Name', 'LickWindow', 'Timer', 0,'StateChangeConditions',{},'OutputActions', {}); 
+    SendStateMatrix(sma); % Send state machine to the Bpod state machine device
+
+    RawEvents = RunStateMatrix; % Run the trial and return events
+     
+    BpodSystem.Data.OptoStimTrialTypes(currentTrial) = LaserMessage;
+    
+    % Update online plots
+    if ~isempty(fieldnames(RawEvents))
+        
+        BpodSystem.Data = AddTrialEvents(BpodSystem.Data, RawEvents);
+        BpodSystem.Data.TrialSettings(currentTrial+NumOdorTrials) = S;
+
+        SaveBpodSessionData;
+        
+        PokesPlotLicksSlow('update');
+    end
+    
+    %--- This final block of code is necessary for the Bpod console's pause and stop buttons to work
+    HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
+    if BpodSystem.Status.BeingUsed == 0
+        return
+    end
+end
+
+fprintf('OptoStim finished\n');
+toc;
+
+fprintf('\nProtocol finished\n')
 
 end
