@@ -5,6 +5,8 @@ function OptoTagging
 
 global BpodSystem
 
+COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignored by git)
+
 %% Setup (runs once before the first trial)
 
 MaxTrials = 20; % Max number of trials
@@ -37,7 +39,7 @@ BpodParameterGUI('init', S);
 TrialTypes = repmat(1:S.NumLasers,1,MaxTrials/S.NumLasers);
 
 % Set up WavePlayer (Analog Output Module for controlling lasers)
-W = BpodWavePlayer('COM4'); % Make sure the COM port is correct
+W = BpodWavePlayer(COM_Ports.COM_Port{strcmp(COM_Ports.Module,'BpodWavePlayer')}); % Make sure the COM port is correct
 SR = 10000; % Sampling rate for analog output
 W.SamplingRate = SR;
 W.OutputRange = '0V:5V';
