@@ -9,7 +9,7 @@ COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignor
 
 %% Setup (runs once before the first trial)
 
-MaxTrials = 5; % Max number of trials
+MaxTrials = 20; % Max number of trials
 
 % Task parameters
 S = BpodSystem.ProtocolSettings; % contains valve order for this mouse in field OdorValvesOdor
@@ -43,7 +43,7 @@ W = BpodWavePlayer(COM_Ports.COM_Port{strcmp(COM_Ports.Module,'BpodWavePlayer')}
 SR = 10000; % Sampling rate for analog output
 W.SamplingRate = SR;
 W.OutputRange = '0V:5V';
-waveform = zeros(1,round(SR/S.LaserPulseFrequency));
+waveform = zeros(1,SR/S.LaserPulseFrequency);
 waveform(1:(S.LaserPulseDuration * SR)) = 5;
 waveform = repmat(waveform,1,S.NumLaserPulse);
 W.loadWaveform(1,waveform);
