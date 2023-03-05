@@ -11,14 +11,14 @@ MaxTrials = 400; % Max number of trials
 % Task parameters
 S = BpodSystem.ProtocolSettings; % contains valve order for this mouse in field OdorValvesOdor
 
-S.NumOdors = 5;
+S.NumOdors = 2;
 S.OdorValvesOrder = 1:S.NumOdors;
 
 % These parameters are shared across animals:
 S.ForeperiodDuration = 0.5; % seconds
 S.OdorDuration = 1; % seconds
-S.GUI.ITIMin = 3; % seconds
-S.GUI.ITIMax = 3; % seconds
+S.GUI.ITIMin = 5; % seconds
+S.GUI.ITIMax = 5; % seconds
 
 % Set up parameter GUI
 BpodParameterGUI('init', S);
@@ -38,9 +38,9 @@ TrialTypes = repmat(1:S.NumOdors,1,MaxTrials/S.NumOdors);
 % Set odors for each trial type in each mouse
 % S.OdorValvesOrder is the order of odors for this mouse, 
 % loaded in the line S = BpodSystem.ProtocolSettings;
-ValveMessages = {['O' 1], ['C' 1]}; % Valve 1 is blank
+ValveMessages = {['B' 0]}; % Valve 1 is blank
 for i = 1:S.NumOdors
-    ValveMessages = [ValveMessages {['O' S.OdorValvesOrder(i)+1], ['C' S.OdorValvesOrder(i)+1]}];
+    ValveMessages = [ValveMessages {['B' 2^S.OdorValvesOrder(i)+1]}];
 end
 LoadSerialMessages('ValveModule1', ValveMessages);  % Set serial messages for valve module. Valve 1 is the default that is normally on
 
@@ -56,8 +56,7 @@ for currentTrial = 1:MaxTrials
     % Compute variables for this trial's state machine:
 
     % Serial message to open/close odor valves
-    ValveMessageOpen = TrialType*2+1;
-    ValveMessageClose = TrialType*2+2;
+    ValveMessage = TrialType+1;
     
     
     % Randomly generate ITI duration
@@ -75,12 +74,12 @@ for currentTrial = 1:MaxTrials
     sma = AddState(sma, 'Name', 'Odor',...
         'Timer', S.OdorDuration,...
         'StateChangeConditions', {'Tup', 'ITI'},...
-        'OutputActions', {'ValveModule1', 1, 'ValveModule1', ValveMessageOpen,... % "1" closes the blank valve
+        'OutputActions', {'ValveModule1', 1, 'ValveModule1', ValveMessage,... % closes the blank valve, opens the odor valve
             'BNC1', 1, 'BNC2', 1}); 
     sma = AddState(sma, 'Name', 'ITI',...
         'Timer', ITIDuration,...
         'StateChangeConditions', {'Tup', 'exit'},...
-        'OutputActions', {'ValveModule1', 2, 'ValveModule1', ValveMessageClose,... % "2" opens the blank valve
+        'OutputActions', {'ValveModule1', 2, 'ValveModule1', 1,... % opens the blank valve, closes the odor valve
             'BNC1', 0, 'BNC2', 0});
     
     % Send state machine to Bpod device

@@ -11,6 +11,7 @@ function OdorLaser_FreeWater
 %   calibration/comparison to odor/opto responses)
 % M. Campbell 11/5/2022: Added unpredicted opto stim before and after odor
 %   trials
+% M. Campbell 3/5/2023: 1 laser, 2 CS
 
 global BpodSystem
 
@@ -34,7 +35,7 @@ COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignor
 mouse = BpodSystem.Status.CurrentSubjectName;
 
 NumRewardTrials1 = 20;
-NumOdorTrials = 120; % Number of odor trials
+NumOdorTrials = 160; % Number of odor trials
 NumRewardTrials2 = 20;
 NumOptoStimTrials = 10; % unpredicted opto stim (to compare to predicted)
 
@@ -49,7 +50,16 @@ if isempty(fieldnames(S))
         '\nGenerating new default parameters.\n******\n']);
     S.NumOdors = input('Number of odors: ');
     S.NumLaser = input('Number of lasers: ');
-    S.OdorValvesOrder = randperm(S.NumOdors);
+    S.LaserPower = input('Laser power (mW): ');
+    S.NumLaserPulse = input('Num laser pulse: '); % number of laser pulses to deliver after trace period
+    S.LaserPulseDuration = input('Laser pulse duration (sec): '); % seconds
+    S.LaserPulseFrequency = input('Laser pulse frequency (Hz): '); % Hz
+    assert(numel(S.NumLaserPulse)==S.NumLaser && ...
+        numel(S.LaserPulseDuration)==S.NumLaser && ...
+        numel(S.LaserPulseFrequency)==S.NumLaser);
+    % S.OdorValvesOrder = randperm(S.NumOdors);
+    S.OdorValvesOrder = input('Odor Valves Order: ');
+    assert(numel(S.OdorValvesOrder)==S.NumOdors);
     SaveProtocolSettings(S);
 end
 
@@ -60,11 +70,6 @@ S.ForeperiodDuration = 0.5; % seconds
 S.OdorDuration = 1; % seconds
 S.TraceDuration = 0.5; % seconds
 S.StimProbability = 0.75; % probability of receiving opto stim on laser trials
-
-% number of params should match number of lasers/LEDs
-S.NumLaserPulse = [25 25]; % number of laser pulses to deliver after trace period
-S.LaserPulseDuration = [0.005 0.005]; % seconds
-S.LaserPulseFrequency = [50 50]; % Hz
 
 S.ITIMean = 12;
 S.ITIMin = 8;
@@ -111,7 +116,7 @@ end
 
 %% Define odor trial types: 1 = Odor1, 2 = Odor2, etc
 % Also define omission trials
-TargetChunkSize = 24; % trials; chunk size in which to balance trial types
+TargetChunkSize = 16; % trials; chunk size in which to balance trial types
 ActualChunkSize = S.NumOdors*round(TargetChunkSize/S.NumOdors);
 NumChunks = ceil(NumOdorTrials/ActualChunkSize);
 TrialTypesChunk = repmat(1:S.NumOdors,1,ActualChunkSize/S.NumOdors);
@@ -131,7 +136,7 @@ StimTrials(TrialTypes==max(TrialTypes)) = 0; % the last trial type is nothing od
 
 %% Define optostim trial types
 
-ChunkSize = 2;
+ChunkSize = 1;
 NumChunks = NumOptoStimTrials/ChunkSize;
 assert(rem(NumChunks,1)==0);
 assert(rem(ChunkSize,S.NumLaser)==0);
@@ -148,7 +153,6 @@ state_colors = struct( ...
     'Reward',[0 1 0],...
     'CS1', [0 1 1],...
     'CS2', [0 0 1],...
-    'CS3', [1 0 1],...
     'Trace', [.6 .6 .6],...
     'Laser', [1 0 0],...
     'ITI', [.9,.9,.9]);
