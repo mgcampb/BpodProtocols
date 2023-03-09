@@ -6,7 +6,7 @@ global BpodSystem
 
 %% Setup (runs once before the first trial)
 
-MaxTrials = 400; % Max number of trials
+MaxTrials = 20; % Max number of trials
 
 % Task parameters
 S = BpodSystem.ProtocolSettings; % contains valve order for this mouse in field OdorValvesOdor
