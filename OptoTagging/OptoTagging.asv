@@ -26,7 +26,7 @@ S.NumLaserPulse = 1; % number of laser pulses to deliver after trace period
 S.LaserPulseDuration = 0.02; % seconds
 S.LaserPulseFrequency = 2; % Hz
 
-S.GUI.ITIMin = 2; % seconds
+S.GUI.ITIMin = 4; % seconds
 S.GUI.ITIMax = 6; % seconds
 
 % Duration of Laser state (based on parameters in S)
