@@ -15,7 +15,7 @@ NumPulse = [10 15 20 25];
 PulseDur = [0.005 0.005 0.005 0.005];
 Freq = [20 30 40 50];
 Power = 4.8;
-NumSweeps = 10;
+NumSweeps = 5;
 NumParams = 4;
 MaxTrials = 1; % Trials per condition per sweep
 
@@ -50,8 +50,8 @@ for sIdx = 1:NumSweeps
         S.LaserPulseFrequency = Freq_rand(pIdx); % Hz
         S.Power = Power; % power in mW
         
-        S.ITIMin = 15; % seconds
-        S.ITIMax = 30; % seconds
+        S.ITIMin = 60; % seconds
+        S.ITIMax = 80; % seconds
         
         % Duration of Laser state (based on parameters in S)
         LaserStateDuration = ceil(S.NumLaserPulse/S.LaserPulseFrequency); % seconds
