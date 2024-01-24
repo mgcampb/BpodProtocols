@@ -9,12 +9,12 @@ COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignor
 
 %% Setup (runs once before the first trial)
 
-MaxTrials = 30; % Max number of trials
+MaxTrials = 40; % Max number of trials
 
 % Task parameters
 S = BpodSystem.ProtocolSettings; % contains valve order for this mouse in field OdorValvesOdor
 
-S.NumLasers = 1;
+S.NumLasers = 2;
 % These parameters are shared across animals:
 S.ForeperiodDuration = 0.5; % seconds
 
@@ -22,12 +22,12 @@ S.ForeperiodDuration = 0.5; % seconds
 % S.LaserPulseDuration = 0.02; % seconds
 % S.LaserPulseFrequency = 20; % Hz
 
-S.NumLaserPulse = 1; % number of laser pulses to deliver after trace period
-S.LaserPulseDuration = 0.5; % seconds
-S.LaserPulseFrequency = 1; % Hz
+S.NumLaserPulse = 20; % number of laser pulses to deliver after trace period
+S.LaserPulseDuration = 0.005; % seconds
+S.LaserPulseFrequency = 40; % Hz
 
-S.GUI.ITIMin = 20; % seconds
-S.GUI.ITIMax = 40; % seconds
+S.GUI.ITIMin = 10; % seconds
+S.GUI.ITIMax = 15; % seconds
 
 % Duration of Laser state (based on parameters in S)
 LaserStateDuration = ceil(S.NumLaserPulse/S.LaserPulseFrequency); % seconds
@@ -36,8 +36,8 @@ LaserStateDuration = ceil(S.NumLaserPulse/S.LaserPulseFrequency); % seconds
 BpodParameterGUI('init', S); 
 
 % Define trial types: 1 = Laser1, 2 = Laser2, etc
-% TrialTypes = repmat(1:S.NumLasers,1,MaxTrials/S.NumLasers);
-% Randomize order each cycle:
+TrialTypes = repmat(1:S.NumLasers,1,MaxTrials/S.NumLasers);
+% Randomize order each cycle
 TrialTypes = [];
 LaserList = 1:S.NumLasers;
 for i = 1:MaxTrials/S.NumLasers
