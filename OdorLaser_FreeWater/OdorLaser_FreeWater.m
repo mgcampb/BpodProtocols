@@ -68,7 +68,7 @@ S.Experimenter = 'Malcolm';
 S.Mouse = mouse;
 S.ForeperiodDuration = 0.5; % seconds
 S.OdorDuration = 1; % seconds
-S.TraceDuration = 0.5; % seconds
+S.TraceDuration = 1; % CHANGED TO 1 SECOND, 1/24/2024, for MC120-124; originally 0.5 seconds
 S.StimProbability = 0.75; % probability of receiving opto stim on laser trials
 
 S.ITIMean = 12;
