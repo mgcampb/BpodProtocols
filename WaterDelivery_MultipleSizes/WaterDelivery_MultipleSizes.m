@@ -12,7 +12,7 @@ global BpodSystem
 
 S = BpodSystem.ProtocolSettings; % Loads settings file chosen in launch manager into current workspace as a struct called 'S'
 S.Experimenter = 'Malcolm';
-S.RewardAmounts = [2 8]; % [1 2 4 8];
+S.RewardAmounts = [1 2 4 8]; % [2 8];
 S.MaxWater = 1000; % in uL
 S.ITIDistribution = 'Exponential';
 S.ITIMean = 12; % changed from 10 10/20/2022
@@ -23,7 +23,7 @@ S.ForeperiodDuration = 0.5;
 
 %% Setup: Define trials
 
-MaxTrials = 20; % 60; % changed from 120 10/20/2022
+MaxTrials = 60; % 20; % changed from 120 10/20/2022
 
 % assign reward sizes in blocks of 40 trials
 RewardAmounts_all = nan(MaxTrials, 1);
