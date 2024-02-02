@@ -23,7 +23,7 @@ S.ForeperiodDuration = 0.5;
 
 %% Setup: Define trials
 
-MaxTrials = 60; % 20; % changed from 120 10/20/2022
+MaxTrials = 40; % 20; % changed from 120 10/20/2022
 
 % assign reward sizes in blocks of 40 trials
 RewardAmounts_all = nan(MaxTrials, 1);

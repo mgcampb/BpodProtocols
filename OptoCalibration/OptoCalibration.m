@@ -15,7 +15,7 @@ NumPulse = [10 15 20 25];
 PulseDur = [0.005 0.005 0.005 0.005];
 Freq = [20 30 40 50];
 Power = 4.8;
-NumSweeps = 5;
+NumSweeps = 10;
 NumParams = 4;
 MaxTrials = 1; % Trials per condition per sweep
 
@@ -49,9 +49,10 @@ for sIdx = 1:NumSweeps
         S.LaserPulseDuration = PulseDur_rand(pIdx); % seconds
         S.LaserPulseFrequency = Freq_rand(pIdx); % Hz
         S.Power = Power; % power in mW
-        
-        S.ITIMin = 60; % seconds
-        S.ITIMax = 80; % seconds
+        S.ITIDistribution = 'Exponential';
+        S.ITIMean = 12; % changed from 10 10/20/2022
+        S.ITIMin = 8; % changed from 4 10/20/2022
+        S.ITIMax = 20;
         
         % Duration of Laser state (based on parameters in S)
         LaserStateDuration = ceil(S.NumLaserPulse/S.LaserPulseFrequency); % seconds
@@ -85,8 +86,11 @@ for sIdx = 1:NumSweeps
             % Which laser channel to trigger
             LaserMessage = TrialType;
             
-            % Randomly generate ITI duration
-            ITIDuration = unifrnd(S.ITIMin,S.ITIMax);
+            % Calculate ITI for this trial
+            ITIDuration = exprnd(S.ITIMean);
+            while ITIDuration < S.ITIMin || ITIDuration > S.ITIMax
+                ITIDuration = exprnd(S.ITIMean);
+            end
             
             % Display trial type
             fprintf('\t\t\tTrial %d: TrialType %d\n',currentTrial,TrialType);
