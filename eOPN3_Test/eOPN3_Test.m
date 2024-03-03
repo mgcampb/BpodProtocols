@@ -26,7 +26,7 @@ COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignor
 
 mouse = BpodSystem.Status.CurrentSubjectName;
 
-NumRewardTrials1 = 20;
+NumRewardTrials1 = 20; % 20;
 NumStimTrials = 40; % Number of stim trials
 NumRewardTrials2 = 20;
 
@@ -39,7 +39,7 @@ S = BpodSystem.ProtocolSettings;
 S.Experimenter = 'Malcolm';
 S.Mouse = mouse;
 S.NumPatterns = 2;
-S.LED_Number = 2; % which LED to trigger
+S.LED_Number = 1; % which LED to trigger
 
 S.ITIMean = 12;
 S.ITIMin = 8;
