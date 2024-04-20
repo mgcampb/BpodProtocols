@@ -22,7 +22,7 @@ if isempty(fieldnames(S))  % If chosen settings file was an empty struct, popula
     
     % Outcome parameters
     S.GUI.RewardAmount = 3; % ul
-    S.GUI.NumPulses = 1000/S.GUI.RewardAmount; % ul To give 1 ml of water
+    S.GUI.NumPulses = 600/S.GUI.RewardAmount; % ul To give 0.6 ml of water
     S.GUIPanels.Outcome = {'RewardAmount','NumPulses'};
         
     % ITI parameters
