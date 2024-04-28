@@ -29,10 +29,11 @@ if isempty(fieldnames(S))  % If chosen settings file was an empty struct, popula
     S.GUI.ITIDistribution = 1;
     S.GUIMeta.ITIDistribution.Style = 'popupmenu';
     S.GUIMeta.ITIDistribution.String = {'Delta', 'Uniform', 'Exponential'};
-    S.GUI.ITIMean = 5; 
+    S.GUI.ITIMean = 4.5; 
     S.GUI.ITIMin = 4; 
     S.GUI.ITIMax = 10; 
-    S.GUIPanels.ITI = {'ITIDistribution', 'ITIMean', 'ITIMin','ITIMax'}; 
+    S.GUI.ForeperiodDuration = 0.5;
+    S.GUIPanels.ITI = {'ITIDistribution', 'ITIMean', 'ITIMin','ITIMax','ForeperiodDuration'}; 
 end
 
 %% Setup: Define trials
@@ -49,6 +50,7 @@ BpodParameterGUI('init', S);
 
 % Pokes plot
 state_colors = struct( ...
+    'Foreperiod',[.9 .9 .9],...
     'Reward', [0 1 0],...
     'ITI', [.9,.9,.9]);
 PokesPlotLicksSlow('init', state_colors, []);
@@ -79,14 +81,18 @@ for currentTrial = 1:MaxTrials
     %--- Assemble state machine
     sma = NewStateMachine();
     
+    sma = AddState(sma,'Name','Foreperiod',...
+        'Timer',S.GUI.ForeperiodDuration,...
+        'StateChangeConditions',{'Tup','Reward'},...
+        'OutputActions',{'BNC1',1,'BNC2',1});
     sma = AddState(sma, 'Name', 'Reward', ... 
         'Timer', RewardValveTime,...
         'StateChangeConditions', {'Tup', 'ITI'},...
-        'OutputActions', {'ValveState',1}); 
+        'OutputActions', {'ValveState',1,'BNC1',0,'BNC2',0}); 
     sma = AddState(sma, 'Name', 'ITI', ... 
         'Timer', ITIDuration(currentTrial),...
         'StateChangeConditions', {'Tup','exit'},...
-        'OutputActions', {});
+        'OutputActions', {'BNC1',0,'BNC2',0});
     
     Acknowledged = SendStateMachine(sma); % Send state machine to the Bpod state machine device
 
