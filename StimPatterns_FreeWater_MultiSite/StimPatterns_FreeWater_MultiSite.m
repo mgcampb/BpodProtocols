@@ -27,7 +27,7 @@ COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignor
 
 mouse = BpodSystem.Status.CurrentSubjectName;
 
-NumRewardTrials1 = 20;
+NumRewardTrials1 = 0;
 NumStimTrials = 180; % Number of stim trials
 NumRewardTrials2 = 20;
 
@@ -47,6 +47,8 @@ S.ITIMin = 8;
 S.ITIMax = 20;
 S.RewardAmounts = [2 8];
 S.ForeperiodDuration = 0.5;
+
+S.StimPower_mW = input('Stim LED power (mW): ');
 
 % display parameters
 fprintf('\nSession parameters:\n')
@@ -232,6 +234,7 @@ for currentTrial = 1:NumRewardTrials1
     %--- This final block of code is necessary for the Bpod console's pause and stop buttons to work
     HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
     if BpodSystem.Status.BeingUsed == 0
+        clear W;
         return
     end
 end
@@ -311,6 +314,7 @@ for currentTrial = 1:NumStimTrials
     HandlePauseCondition;
     if BpodSystem.Status.BeingUsed == 0
         ModuleWrite('ValveModule1', ['B' 0]); % make sure the odor valves are closed
+        clear W;
         return
     end
     
@@ -380,12 +384,15 @@ for currentTrial = 1:NumRewardTrials2
     %--- This final block of code is necessary for the Bpod console's pause and stop buttons to work
     HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
     if BpodSystem.Status.BeingUsed == 0
+        clear W;
         return
     end
 end
 
 fprintf('Rewards2 finished\n');
 toc;
+
+clear W;
 
 fprintf('\nProtocol finished\n')
 

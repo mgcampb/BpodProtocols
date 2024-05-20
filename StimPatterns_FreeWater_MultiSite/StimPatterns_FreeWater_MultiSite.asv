@@ -13,9 +13,10 @@ function StimPatterns_FreeWater_MultiSite
 %   trials
 % M. Campbell 3/5/2023: 1 laser, 2 CS
 % M. Campbell 1/25/2024: adapted for Different Stim Patterns experiment
-% (stim D1 neurons in different patterns while recording GRABDA signals in DA
-% axons in VS)
-% M. Campbell 4/28/2024: Adapted for multisite stim
+%   (stim D1 neurons in different patterns while recording GRABDA signals in DA
+%   axons in VS)
+% M. Campbell 4/28/2024: Adapted for multisite stim. Got rid of PokesPlot
+%   (too many states, no lick sensor anyway)
 
 global BpodSystem
 
@@ -46,6 +47,8 @@ S.ITIMin = 8;
 S.ITIMax = 20;
 S.RewardAmounts = [2 8];
 S.ForeperiodDuration = 0.5;
+
+S.StimPower_mW = input('Stim LED power (mW): ');
 
 % display parameters
 fprintf('\nSession parameters:\n')
@@ -87,7 +90,7 @@ end
 % Also define omission trials
 NumTrialTypes = S.NumLEDs * S.NumPatterns;
 ChunkSize = S.NumLEDs * S.NumPatterns; % trials; chunk size in which to balance trial types
-NumChunks = ceil(NumStimTrials/ActualChunkSize);
+NumChunks = ceil(NumStimTrials/ChunkSize);
 TrialTypesChunk = repmat(1:NumTrialTypes,1,ChunkSize/NumTrialTypes);
 TrialTypesMapping = nan(NumTrialTypes,1);
 ctr = 1;
@@ -103,16 +106,6 @@ for i = 1:NumChunks
     TrialTypes = [TrialTypes TrialTypesMapping(TrialTypesChunk(perm_idx))];
 end
 TrialTypes = TrialTypes(1:NumStimTrials);
-keyboard;
-
-
-%% Pokes plot
-StimColors = lines(4);
-state_colors = struct( ...
-    'Foreperiod',[.9,.9,.9],...
-    'Reward',[0 1 0],...
-    'ITI', [.9,.9,.9]);
-PokesPlotLicksSlow('init', state_colors, []);
 
 
 %% Set up WavePlayer (Analog Output Module for controlling lasers)
@@ -173,10 +166,10 @@ S.stimWaveforms = {waveform_1secSquare,waveform_2secSquare,waveform_rampUp,wavef
 % load WavePlayerMessages messages
 WavePlayerMessages = {};
 for LED_idx = 1:S.NumLEDs
-    WavePlayerMessages = [WavePlayerMessages {['P' LED_idx 0]}];
-    WavePlayerMessages = [WavePlayerMessages {['P' LED_idx 1]}];
-    WavePlayerMessages = [WavePlayerMessages {['P' LED_idx 2]}];
-    WavePlayerMessages = [WavePlayerMessages {['P' LED_idx 3]}];
+    WavePlayerMessages = [WavePlayerMessages {['P' 2^(LED_idx-1) 0]}]; % send waveform 1 to the LED_idx'th channel
+    WavePlayerMessages = [WavePlayerMessages {['P' 2^(LED_idx-1) 1]}]; % send waveform 2 to the LED_idx'th channel
+    WavePlayerMessages = [WavePlayerMessages {['P' 2^(LED_idx-1) 2]}]; % send waveform 3 to the LED_idx'th channel
+    WavePlayerMessages = [WavePlayerMessages {['P' 2^(LED_idx-1) 3]}]; % send waveform 4 to the LED_idx'th channel
 end
 LoadSerialMessages('WavePlayer1', WavePlayerMessages);
 
@@ -217,9 +210,9 @@ for currentTrial = 1:NumRewardTrials1
         'StateChangeConditions', {'Tup','exit'},...
         'OutputActions', {'BNC1',0,'BNC2',0});
 
-    % Add the odor states so that pokes plot doesn't get messed up:
-    for tt = 1:S.NumPatterns
-        sma = AddState(sma, 'Name', sprintf('Stim%d',tt),'Timer', 0,'StateChangeConditions',{},'OutputActions', {}); 
+    % Add the odor states (unused):
+    for tt = 1:NumTrialTypes
+        sma = AddState(sma, 'Name', sprintf('Stim%d',TrialTypesMapping(tt)),'Timer', 0,'StateChangeConditions',{},'OutputActions', {}); 
     end
     
     SendStateMatrix(sma); % Send state machine to the Bpod state machine device
@@ -236,7 +229,6 @@ for currentTrial = 1:NumRewardTrials1
 
         SaveBpodSessionData;
         
-        PokesPlotLicksSlow('update');
     end
     
     %--- This final block of code is necessary for the Bpod console's pause and stop buttons to work
@@ -289,7 +281,7 @@ for currentTrial = 1:NumStimTrials
         'StateChangeConditions', {'Tup', Stim_state},...
         'OutputActions', {'BNC1', 1, 'BNC2', 1});
     for tt = 1:NumTrialTypes
-        sma = AddState(sma, 'Name', sprintf('Stim%d',TrialTypeMapping(tt)),...
+        sma = AddState(sma, 'Name', sprintf('Stim%d',TrialTypesMapping(tt)),...
             'Timer', 2,...
             'StateChangeConditions', {'Tup', 'ITI'},...
             'OutputActions', {'WavePlayer1', LaserMessage, 'BNC1', 0, 'BNC2', 0}); 
@@ -299,7 +291,7 @@ for currentTrial = 1:NumStimTrials
         'StateChangeConditions', {'Tup', 'exit'},...
         'OutputActions', {'BNC1', 0, 'BNC2', 0});
 
-    % Add reward state so pokes plot doesn't get messed up:
+    % Add reward state (unused):
     sma = AddState(sma,'Name','Reward','Timer',0,'StateChangeConditions',{},'OutputActions',{}); 
     
     % Send state machine to Bpod device
@@ -315,8 +307,6 @@ for currentTrial = 1:NumStimTrials
         BpodSystem.Data.TrialTypes(currentTrial) = TrialType;
         SaveBpodSessionData;
         
-        % Update online plots
-        PokesPlotLicksSlow('update');
     end
 
     % Handle pauses and exit if the user ended the session
@@ -368,9 +358,9 @@ for currentTrial = 1:NumRewardTrials2
         'StateChangeConditions', {'Tup','exit'},...
         'OutputActions', {'BNC1',0,'BNC2',0});
 
-    % Add the odor states so that pokes plot doesn't get messed up:
-    for tt = 1:S.NumPatterns
-        sma = AddState(sma, 'Name', sprintf('Stim%d',tt),'Timer', 0,'StateChangeConditions',{},'OutputActions', {}); 
+    % Add the odor states (unused):
+    for tt = 1:NumTrialTypes
+        sma = AddState(sma, 'Name', sprintf('Stim%d',TrialTypesMapping(tt)),'Timer', 0,'StateChangeConditions',{},'OutputActions', {}); 
     end
     
     SendStateMatrix(sma); % Send state machine to the Bpod state machine device
@@ -386,8 +376,7 @@ for currentTrial = 1:NumRewardTrials2
         BpodSystem.Data.TrialSettings(currentTrial+NumRewardTrials1+NumStimTrials) = S;
 
         SaveBpodSessionData;
-        
-        PokesPlotLicksSlow('update');
+
     end
     
     %--- This final block of code is necessary for the Bpod console's pause and stop buttons to work
