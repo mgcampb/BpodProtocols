@@ -79,8 +79,8 @@ for i = 1:nBlocks
 end
 
 % Rewards2:
-RewardAmounts2 = nan(NumRewardTrials1, 1);
-nBlocks = NumRewardTrials1/blockSize;
+RewardAmounts2 = nan(NumRewardTrials2, 1);
+nBlocks = NumRewardTrials2/blockSize;
 counter = 1;
 for i = 1:nBlocks
     RewardAmount = repmat(S.RewardAmounts,1,rewardsPerBlock);

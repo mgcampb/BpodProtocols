@@ -9,7 +9,7 @@ COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignor
 
 %% Setup (runs once before the first trial)
 
-MaxTrials = 30; % Max number of trials
+MaxTrials = 80; % Max number of trials
 
 % Task parameters
 S = BpodSystem.ProtocolSettings; % contains valve order for this mouse in field OdorValvesOdor
@@ -22,12 +22,12 @@ S.ForeperiodDuration = 0.5; % seconds
 % S.LaserPulseDuration = 0.02; % seconds
 % S.LaserPulseFrequency = 20; % Hz
 
-S.NumLaserPulse = 1; % number of laser pulses to deliver after trace period
-S.LaserPulseDuration = 0.5; % seconds
-S.LaserPulseFrequency = 1; % Hz
+S.NumLaserPulse = 60; % number of laser pulses to deliver after trace period
+S.LaserPulseDuration = 0.001; % seconds
+S.LaserPulseFrequency = 20; % Hz
 
-S.GUI.ITIMin = 20; % seconds
-S.GUI.ITIMax = 40; % seconds
+S.GUI.ITIMin = 2; % seconds
+S.GUI.ITIMax = 4; % seconds
 
 % Duration of Laser state (based on parameters in S)
 LaserStateDuration = ceil(S.NumLaserPulse/S.LaserPulseFrequency); % seconds

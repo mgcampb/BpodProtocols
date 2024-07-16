@@ -31,7 +31,7 @@ COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignor
 mouse = BpodSystem.Status.CurrentSubjectName;
 
 NumRewardTrials1 = 20;
-NumStimTrials = 180; % Number of stim trials
+NumStimTrials = 120; % Number of stim trials
 NumRewardTrials2 = 20;
 
 BpodSystem.Data.TaskDescription = 'Rewards1 StimTrials Rewards2';
@@ -42,7 +42,7 @@ S = BpodSystem.ProtocolSettings;
 % These parameters are shared across animals:
 S.Experimenter = 'Malcolm';
 S.Mouse = mouse;
-S.NumLEDs = 3;
+S.NumLEDs = 1;
 S.NumPatterns = 3;
 
 S.ITIMean = 12;
@@ -52,6 +52,7 @@ S.RewardAmounts = [2 8];
 S.ForeperiodDuration = 0.5;
 
 S.StimPower_mW = input('Stim LED power (mW): ');
+S.PulseDur = 0.001;
 
 % display parameters
 fprintf('\nSession parameters:\n')
@@ -79,8 +80,8 @@ for i = 1:nBlocks
 end
 
 % Rewards2:
-RewardAmounts2 = nan(NumRewardTrials1, 1);
-nBlocks = NumRewardTrials1/blockSize;
+RewardAmounts2 = nan(NumRewardTrials2, 1);
+nBlocks = NumRewardTrials2/blockSize;
 counter = 1;
 for i = 1:nBlocks
     RewardAmount = repmat(S.RewardAmounts,1,rewardsPerBlock);
@@ -121,19 +122,19 @@ W.OutputRange = '0V:5V';
 
 % 1) 3 sec at 5 Hz
 waveform_3secSquare_5Hz = zeros(1,round(SR/5));
-waveform_3secSquare_5Hz(1:(0.005 * SR)) = 5;
+waveform_3secSquare_5Hz(1:(S.PulseDur * SR)) = 5;
 waveform_3secSquare_5Hz = repmat(waveform_3secSquare_5Hz,1,15);
 W.loadWaveform(1,waveform_3secSquare_5Hz);
 
 % 2) 3 sec at 10 Hz
 waveform_3secSquare_10Hz = zeros(1,round(SR/10));
-waveform_3secSquare_10Hz(1:(0.005 * SR)) = 5;
+waveform_3secSquare_10Hz(1:(S.PulseDur * SR)) = 5;
 waveform_3secSquare_10Hz = repmat(waveform_3secSquare_10Hz,1,30);
 W.loadWaveform(2,waveform_3secSquare_10Hz);
 
 % 3) 3 sec at 20 Hz
 waveform_3secSquare_20Hz = zeros(1,round(SR/20));
-waveform_3secSquare_20Hz(1:(0.005 * SR)) = 5;
+waveform_3secSquare_20Hz(1:(S.PulseDur * SR)) = 5;
 waveform_3secSquare_20Hz = repmat(waveform_3secSquare_20Hz,1,60);
 W.loadWaveform(3,waveform_3secSquare_20Hz);
 
