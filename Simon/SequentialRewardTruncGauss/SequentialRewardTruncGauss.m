@@ -39,7 +39,7 @@ state_colors = struct( ...
 
 %PokesPlotLicksSlow3('init', state_colors,[],S.GUI.maxITI);
 
-%% Setup: Define trials
+%% Setup: Define trials 
 disp(['Total ITI: ' num2str(sum(BpodSystem.Data.ITIbyTrials))]);
 
 RewardValveTime = GetValveTimes(S.GUI.RewardAmount, 1);
