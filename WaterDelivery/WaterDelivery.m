@@ -21,17 +21,20 @@ if isempty(fieldnames(S))  % If chosen settings file was an empty struct, popula
     S.GUIPanels.Protocol = {'Protocol', 'Experimenter', 'Subject'};
     
     % Outcome parameters
-    S.GUI.RewardAmount = 3; % ul
-    S.GUI.NumPulses = 600/S.GUI.RewardAmount; % ul To give 0.6 ml of water
+    S.GUI.RewardAmount = 4; % ul
+    S.GUI.NumPulses = 200/S.GUI.RewardAmount; % ul To give 0.6 ml of water
     S.GUIPanels.Outcome = {'RewardAmount','NumPulses'};
         
     % ITI parameters
-    S.GUI.ITIDistribution = 1;
+    S.GUI.ITIDistribution = 3;
     S.GUIMeta.ITIDistribution.Style = 'popupmenu';
     S.GUIMeta.ITIDistribution.String = {'Delta', 'Uniform', 'Exponential'};
-    S.GUI.ITIMean = 4.5; 
-    S.GUI.ITIMin = 4; 
-    S.GUI.ITIMax = 10; 
+    S.GUI.ITIMean = 12;
+    S.GUI.ITIMin = 8;
+    S.GUI.ITIMax = 20;
+%     S.GUI.ITIMean = 5;
+%     S.GUI.ITIMin = 4;
+%     S.GUI.ITIMax = 10;
     S.GUI.ForeperiodDuration = 0.5;
     S.GUIPanels.ITI = {'ITIDistribution', 'ITIMean', 'ITIMin','ITIMax','ForeperiodDuration'}; 
 end
