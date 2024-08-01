@@ -27,11 +27,11 @@ COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignor
 
 mouse = BpodSystem.Status.CurrentSubjectName;
 
-NumRewardTrials1 = 2;
-NumStimTrials1 = 7;
-NumRewardTrials2 = 2;
-NumStimTrials2 = 7;
-NumRewardTrials3 = 2;
+NumRewardTrials1 = 2*8;
+NumStimTrials1 = 7*15;
+NumRewardTrials2 = 2*8;
+NumStimTrials2 = 7*15;
+NumRewardTrials3 = 2*8;
 
 BpodSystem.Data.TaskDescription = 'Rewards1 StimTrials1 Rewards2 StimTrials2 Rewards3';
 
@@ -50,7 +50,7 @@ S.RewardAmounts = [2 8];
 S.ForeperiodDuration = 0.5;
 
 S.StimPower_mW = input('Stim LED power (mW): ');
-S.PulseDur = 0.001;
+S.PulseDur = 0.002;
 
 % display parameters
 fprintf('\nSession parameters:\n')
@@ -63,7 +63,7 @@ fprintf('NumRewardTrials1 = %d\nNumStimTrials1 = %d\nNumRewardTrials2 = %d\nNumS
 
 % assign reward sizes in blocks
 nRewardAmounts = numel(S.RewardAmounts);
-rewardsPerBlock = 1;
+rewardsPerBlock = 2;
 blockSize = rewardsPerBlock*nRewardAmounts;
 
 % Rewards1:
@@ -257,7 +257,7 @@ end
 fprintf('Rewards1 finished\n');
 toc;
 
-pause(15);
+pause(10);
 
 
 %% First set of stim trials
@@ -332,7 +332,7 @@ end
 fprintf('Stim trials1 finished\n');
 toc;
 
-pause(15);
+pause(10);
 
 
 %% Second set of rewards
@@ -401,7 +401,7 @@ end
 fprintf('Rewards2 finished\n');
 toc;
 
-pause(15);
+pause(10);
 
 
 %% First set of stim trials
@@ -476,7 +476,7 @@ end
 fprintf('Stim trials2 finished\n');
 toc;
 
-pause(15);
+pause(10);
 
 
 %% Third set of rewards

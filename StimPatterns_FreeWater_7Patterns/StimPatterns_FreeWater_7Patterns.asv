@@ -27,13 +27,13 @@ COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignor
 
 mouse = BpodSystem.Status.CurrentSubjectName;
 
-NumRewardTrials1 = 2;
-NumStimTrials1 = 7;
-NumRewardTrials2 = 2;
-NumStimTrials2 = 7;
-NumRewardTrials3 = 2;
+NumRewardTrials1 = 2*8;
+NumStimTrials1 = 7*13;
+NumRewardTrials2 = 2*8;
+NumStimTrials2 = 7*13;
+NumRewardTrials3 = 2*8;
 
-BpodSystem.Data.TaskDescription = 'Rewards1 StimTrials Rewards2';
+BpodSystem.Data.TaskDescription = 'Rewards1 StimTrials1 Rewards2 StimTrials2 Rewards3';
 
 % Task parameters
 S = BpodSystem.ProtocolSettings; 
@@ -63,7 +63,7 @@ fprintf('NumRewardTrials1 = %d\nNumStimTrials1 = %d\nNumRewardTrials2 = %d\nNumS
 
 % assign reward sizes in blocks
 nRewardAmounts = numel(S.RewardAmounts);
-rewardsPerBlock = 5;
+rewardsPerBlock = 2;
 blockSize = rewardsPerBlock*nRewardAmounts;
 
 % Rewards1:
@@ -103,14 +103,23 @@ end
 %% Define stim trial types
 TargetChunkSize = 7; % trials; chunk size in which to balance trial types
 ActualChunkSize = S.NumPatterns*round(TargetChunkSize/S.NumPatterns);
-NumChunks = ceil(NumStimTrials/ActualChunkSize);
 TrialTypesChunk = repmat(1:S.NumPatterns,1,ActualChunkSize/S.NumPatterns);
-TrialTypes = [];
-for i = 1:NumChunks
+
+NumChunks1 = ceil(NumStimTrials1/ActualChunkSize);
+TrialTypes1 = [];
+for i = 1:NumChunks1
     perm_idx = randperm(ActualChunkSize);
-    TrialTypes = [TrialTypes TrialTypesChunk(perm_idx)];
+    TrialTypes1 = [TrialTypes1 TrialTypesChunk(perm_idx)];
 end
-TrialTypes = TrialTypes(1:NumStimTrials);
+TrialTypes1 = TrialTypes1(1:NumStimTrials1);
+
+NumChunks2 = ceil(NumStimTrials2/ActualChunkSize);
+TrialTypes2 = [];
+for i = 1:NumChunks2
+    perm_idx = randperm(ActualChunkSize);
+    TrialTypes2 = [TrialTypes2 TrialTypesChunk(perm_idx)];
+end
+TrialTypes2 = TrialTypes2(1:NumStimTrials2);
 
 
 %% Set up WavePlayer (Analog Output Module for controlling lasers)
@@ -248,7 +257,7 @@ end
 fprintf('Rewards1 finished\n');
 toc;
 
-pause(15);
+pause(10);
 
 
 %% First set of stim trials
@@ -323,7 +332,7 @@ end
 fprintf('Stim trials1 finished\n');
 toc;
 
-pause(15);
+pause(10);
 
 
 %% Second set of rewards
@@ -392,7 +401,82 @@ end
 fprintf('Rewards2 finished\n');
 toc;
 
-pause(15);
+pause(10);
+
+
+%% First set of stim trials
+fprintf('\nStim trials2\n');
+for currentTrial = 1:NumStimTrials2
+    
+    TrialType = TrialTypes2(currentTrial);
+    
+    % Compute variables for this trial's state machine:
+   
+    Stim_state = sprintf('Stim%d',TrialType);
+
+    % Which laser pattern to trigger
+    LaserMessage = TrialType;
+    
+    % Calculate ITI for this trial
+    ITIDuration = exprnd(S.ITIMean-S.ITIMin) + S.ITIMin;
+    if ITIDuration > S.ITIMax
+        ITIDuration = S.ITIMax;
+    end
+    
+    
+    % Display trial type
+    fprintf('\tTrial %d:\tTrialType%d\tITI=%0.1fs\n',...
+        currentTrial,TrialType,ITIDuration);
+    
+    
+    % Create state matrix
+    sma = NewStateMatrix();
+    sma = AddState(sma, 'Name', 'Foreperiod',...
+        'Timer', S.ForeperiodDuration,...
+        'StateChangeConditions', {'Tup', Stim_state},...
+        'OutputActions', {'BNC1', 1, 'BNC2', 1});
+    for tt = 1:S.NumPatterns
+        sma = AddState(sma, 'Name', sprintf('Stim%d',tt),...
+            'Timer', 2,...
+            'StateChangeConditions', {'Tup', 'ITI'},...
+            'OutputActions', {'WavePlayer1', LaserMessage, 'BNC1', 0, 'BNC2', 0}); 
+    end
+    sma = AddState(sma, 'Name', 'ITI',...
+        'Timer', ITIDuration,...
+        'StateChangeConditions', {'Tup', 'exit'},...
+        'OutputActions', {'BNC1', 0, 'BNC2', 0});
+
+    % Add reward state so pokes plot doesn't get messed up:
+    sma = AddState(sma,'Name','Reward','Timer',0,'StateChangeConditions',{},'OutputActions',{}); 
+    
+    % Send state machine to Bpod device
+    SendStateMatrix(sma);
+    
+    % Run the trial and return events
+    RawEvents = RunStateMatrix;
+    
+    if ~isempty(fieldnames(RawEvents))
+        % Save trial data
+        BpodSystem.Data = AddTrialEvents(BpodSystem.Data, RawEvents);
+        BpodSystem.Data.TrialSettings(currentTrial+NumRewardTrials1+NumStimTrials1+NumRewardTrials2) = S;
+        BpodSystem.Data.TrialTypes2(currentTrial) = TrialType;
+        SaveBpodSessionData;
+        
+    end
+
+    % Handle pauses and exit if the user ended the session
+    HandlePauseCondition;
+    if BpodSystem.Status.BeingUsed == 0
+        ModuleWrite('ValveModule1', ['B' 0]); % make sure the odor valves are closed
+        return
+    end
+    
+end
+
+fprintf('Stim trials2 finished\n');
+toc;
+
+pause(10);
 
 
 %% Third set of rewards
