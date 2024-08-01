@@ -36,7 +36,12 @@ COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignor
 
 mouse = BpodSystem.Status.CurrentSubjectName;
 
-NumTrials = 200;
+
+ChunkSize = 21; % trials; chunk size in which to balance trial types
+NumTrials = ChunkSize*10;
+% ChunkSize = 20;
+% NumTrials = ChunkSize*8;
+
 
 BpodSystem.Data.TaskDescription = 'OdorWater_VariableProbability';
 
@@ -61,8 +66,9 @@ S.ForeperiodDuration = 0.5; % seconds
 S.OdorDuration = 1; % seconds
 S.TraceDuration = 1; % seconds
 
-S.RewardProbability = [1 0]; % one per odor
-S.FracTrials_Odor = [0.5 0.5]; % fraction trials per odor
+S.RewardProbability = [0.9 0]; % one per odor
+% S.RewardProbability = [1 0]; % one per odor
+S.FracTrials_Odor = [10/ChunkSize 10/ChunkSize]; % fraction trials per odor
 S.FracTrials_Free = 1-sum(S.FracTrials_Odor); % fraction free reward trials
 assert(S.NumOdors == numel(S.RewardProbability),'RewardProbability must have same number of elements as there are odors'); % assert one reward probability per odor
 S.RewardAmount = 4; % in uL; same for all odors
@@ -79,7 +85,6 @@ fprintf('NumTrials = %d\n',NumTrials);
 
 %% Define trial types: 0 = free reward; 1 = Odor1, 2 = Odor2, etc; 
 % Also define omission trials
-ChunkSize = 20; % trials; chunk size in which to balance trial types
 NumChunks = ceil(NumTrials/ChunkSize);
 TrialTypes = [];
 RewardTrials = [];

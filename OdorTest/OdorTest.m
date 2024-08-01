@@ -6,25 +6,26 @@ global BpodSystem
 
 %% Setup (runs once before the first trial)
 
-MaxTrials = 20; % Max number of trials
+MaxTrials = 10; % Max number of trials
 
 % Task parameters
 S = BpodSystem.ProtocolSettings; % contains valve order for this mouse in field OdorValvesOdor
 
-S.NumOdors = 2;
+S.NumOdors = 3;
 S.OdorValvesOrder = 1:S.NumOdors;
 
 % These parameters are shared across animals:
 S.ForeperiodDuration = 0.5; % seconds
 S.OdorDuration = 1; % seconds
-S.GUI.ITIMin = 5; % seconds
-S.GUI.ITIMax = 5; % seconds
+S.GUI.ITIMin = 15; % seconds
+S.GUI.ITIMax = 30; % seconds
 
 % Set up parameter GUI
 BpodParameterGUI('init', S);
 
 % Define trial types: 1 = Odor1, 2 = Odor2, etc
-TrialTypes = repmat(1:S.NumOdors,1,MaxTrials/S.NumOdors);
+% TrialTypes = repmat(1:S.NumOdors,1,MaxTrials/S.NumOdors);
+TrialTypes = repmat(S.NumOdors,1,MaxTrials);
 
 % Pokes plot
 % state_colors = struct( ...
