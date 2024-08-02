@@ -6,12 +6,12 @@ global BpodSystem
 
 %% Setup (runs once before the first trial)
 
-MaxTrials = 10; % Max number of trials
+MaxTrials = 20; % Max number of trials
 
 % Task parameters
 S = BpodSystem.ProtocolSettings; % contains valve order for this mouse in field OdorValvesOdor
 
-S.NumOdors = 3;
+S.NumOdors = 2;
 S.OdorValvesOrder = 1:S.NumOdors;
 
 % These parameters are shared across animals:
@@ -24,8 +24,8 @@ S.GUI.ITIMax = 30; % seconds
 BpodParameterGUI('init', S);
 
 % Define trial types: 1 = Odor1, 2 = Odor2, etc
-% TrialTypes = repmat(1:S.NumOdors,1,MaxTrials/S.NumOdors);
-TrialTypes = repmat(S.NumOdors,1,MaxTrials);
+TrialTypes = repmat(1:S.NumOdors,1,MaxTrials/S.NumOdors);
+% TrialTypes = repmat(S.NumOdors,1,MaxTrials);
 
 % Pokes plot
 % state_colors = struct( ...
@@ -64,7 +64,8 @@ for currentTrial = 1:MaxTrials
     ITIDuration = unifrnd(S.GUI.ITIMin,S.GUI.ITIMax);
     
     % Display trial type
-    fprintf('Trial %d: TrialType %d (Odor %d)\n',currentTrial,TrialType, S.OdorValvesOrder(TrialType));
+    fprintf('Trial %d/%d: TrialType %d (Odor %d)\n',currentTrial,MaxTrials,TrialType,...
+        S.OdorValvesOrder(TrialType));
     
     % Create state matrix
     sma = NewStateMatrix();
@@ -107,5 +108,7 @@ for currentTrial = 1:MaxTrials
     end
     
 end
+
+fprintf('\nProtocol finished.\n');
 
 end
