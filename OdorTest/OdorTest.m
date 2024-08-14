@@ -6,19 +6,24 @@ global BpodSystem
 
 %% Setup (runs once before the first trial)
 
+% MaxTrials = 30; % Max number of trials
 MaxTrials = 20; % Max number of trials
+% MaxTrials = 5; % Max number of trials
 
 % Task parameters
 S = BpodSystem.ProtocolSettings; % contains valve order for this mouse in field OdorValvesOdor
 
 S.NumOdors = 2;
+% S.NumOdors = 3;
 S.OdorValvesOrder = 1:S.NumOdors;
 
 % These parameters are shared across animals:
 S.ForeperiodDuration = 0.5; % seconds
 S.OdorDuration = 1; % seconds
-S.GUI.ITIMin = 15; % seconds
-S.GUI.ITIMax = 30; % seconds
+S.GUI.ITIMin = 5; % seconds
+S.GUI.ITIMax = 5; % seconds
+% S.GUI.ITIMin = 15; % seconds
+% S.GUI.ITIMax = 30; % seconds
 
 % Set up parameter GUI
 BpodParameterGUI('init', S);
@@ -77,7 +82,7 @@ for currentTrial = 1:MaxTrials
         'Timer', S.OdorDuration,...
         'StateChangeConditions', {'Tup', 'ITI'},...
         'OutputActions', {'ValveModule1', ValveMessage,... % closes the blank valve, opens the odor valve
-            'BNC1', 1, 'BNC2', 1}); 
+            'BNC1', 0, 'BNC2', 0}); 
     sma = AddState(sma, 'Name', 'ITI',...
         'Timer', ITIDuration,...
         'StateChangeConditions', {'Tup', 'exit'},...
