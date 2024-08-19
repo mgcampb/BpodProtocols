@@ -1,4 +1,4 @@
-function OdorWater_VariableProbability_FreeRewards
+function OdorWater_VariableProbability_FreeRewards_NovelOdor
 
 % M. Campbell 8/2/2021: Protocol to deliver odors followed by laser pulses.
 % M. Campbell 12/1/2021: Edited OdorLaser to create OdorLaserWater task.
@@ -13,6 +13,7 @@ function OdorWater_VariableProbability_FreeRewards
 %   trials
 % M. Campbell 1/3/2023: Changed to just deliver Odors followed by Water
 % M. Campbell 7/17/2024: Added unpredicted water trials
+% M. Campbell 8/16/2024: Added interleaved novel odor (CS3) trials
 
 global BpodSystem
 
@@ -38,9 +39,11 @@ mouse = BpodSystem.Status.CurrentSubjectName;
 
 
 ChunkSize = 21; % trials; chunk size in which to balance trial types
-NumTrials = ChunkSize*10;
+NumTrials_Conditioning = ChunkSize*10;
 % ChunkSize = 20;
-% NumTrials = ChunkSize*8;
+% NumTrials_Conditioning = ChunkSize*8;
+NumNovelOdorTrials = 5;
+NumTrials_Total = NumTrials_Conditioning+NumNovelOdorTrials;
 
 
 BpodSystem.Data.TaskDescription = 'OdorWater_VariableProbability';
@@ -66,7 +69,7 @@ S.ForeperiodDuration = 0.5; % seconds
 S.OdorDuration = 1; % seconds
 S.TraceDuration = 1; % seconds
 
-S.RewardProbability = [0.9 0]; % one per odor
+S.RewardProbability = [0.9 0]; % one per odor (other than novel odor)
 % S.RewardProbability = [1 0]; % one per odor
 S.FracTrials_Odor = [10/ChunkSize 10/ChunkSize]; % fraction trials per odor
 S.FracTrials_Free = 1-sum(S.FracTrials_Odor); % fraction free reward trials
@@ -77,15 +80,19 @@ S.ITIMean = 12;
 S.ITIMin = 8;
 S.ITIMax = 20;
 
+% Add novel odor
+S.NumOdors = S.NumOdors+1;
+S.OdorValvesOrder = [S.OdorValvesOrder S.NumOdors];
+
 % display parameters
 fprintf('\nSession parameters:\n')
 S
-fprintf('NumTrials = %d\n',NumTrials);
+fprintf('NumTrials_Total = %d\n',NumTrials_Total);
 
 
 %% Define trial types: 0 = free reward; 1 = Odor1, 2 = Odor2, etc; 
 % Also define omission trials
-NumChunks = ceil(NumTrials/ChunkSize);
+NumChunks = ceil(NumTrials_Conditioning/ChunkSize);
 TrialTypes = [];
 RewardTrials = [];
 for chunkIdx = 1:NumChunks
@@ -93,7 +100,7 @@ for chunkIdx = 1:NumChunks
     N_free = round(ChunkSize*S.FracTrials_Free);
     tt_this = zeros(1,N_free);
     rew_this = ones(1,N_free);
-    for odorIdx = 1:S.NumOdors
+    for odorIdx = 1:S.NumOdors-1
         N_odor = round(ChunkSize*S.FracTrials_Odor(odorIdx));
         N_rew = round(N_odor*S.RewardProbability(odorIdx));
         tt_this = [tt_this odorIdx*ones(1,N_odor)];
@@ -115,6 +122,16 @@ for chunkIdx = 1:NumChunks
     
 end
 
+% add novel odor trials
+offset = 20;
+chunk = floor((NumTrials_Conditioning-offset)/NumNovelOdorTrials);
+for trIdx = 1:NumNovelOdorTrials
+    tr_this = offset+randperm(chunk,1);
+    TrialTypes = [TrialTypes(1:tr_this) S.NumOdors TrialTypes(tr_this+1:end)];
+    RewardTrials = [RewardTrials(1:tr_this) 0 RewardTrials(tr_this+1:end)];
+    offset = offset+chunk+1;
+end
+
 
 %% Pokes plot
 state_colors = struct( ...
@@ -122,6 +139,7 @@ state_colors = struct( ...
     'Reward',[0 1 0],...
     'CS1', [0 1 1],...
     'CS2', [0 0 1],...
+    'CS3', [1 0 0],...
     'Trace', [.6 .6 .6],...
     'ITI', [.9,.9,.9]);
 PokesPlotLicksSlow('init', state_colors, []);
@@ -140,7 +158,7 @@ LoadSerialMessages('ValveModule1', ValveMessages);  % Set serial messages for va
 %% Odor trials
 tic
 AccumulatedReward = 0;
-for currentTrial = 1:NumTrials
+for currentTrial = 1:NumTrials_Total
     
     TrialType = TrialTypes(currentTrial);
     RewardTrial = RewardTrials(currentTrial);
