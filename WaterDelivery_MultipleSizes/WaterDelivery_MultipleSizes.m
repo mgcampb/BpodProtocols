@@ -12,7 +12,7 @@ global BpodSystem
 
 S = BpodSystem.ProtocolSettings; % Loads settings file chosen in launch manager into current workspace as a struct called 'S'
 S.Experimenter = 'Malcolm';
-S.RewardAmounts = [1 2 4 8]; % [2 8];
+S.RewardAmounts = [0.5 1 2 4 8 16]; % [2 8];
 S.MaxWater = 1000; % in uL
 S.ITIDistribution = 'Exponential';
 S.ITIMean = 12; % changed from 10 10/20/2022
@@ -23,7 +23,7 @@ S.ForeperiodDuration = 0.5;
 
 %% Setup: Define trials
 
-MaxTrials = 40; % 20; % changed from 120 10/20/2022
+MaxTrials = 60; % 20; % changed from 120 10/20/2022
 
 % assign reward sizes in blocks of 40 trials
 RewardAmounts_all = nan(MaxTrials, 1);
@@ -62,7 +62,7 @@ for currentTrial = 1:MaxTrials
     RewardValveTime = GetValveTimes(RewardAmount, 1);
 
     AccumulatedReward = AccumulatedReward+RewardAmount;
-    fprintf('Trial %d: %d uL. ValveTime: %0.1f ms. AccumulatedReward: %d uL\n',...
+    fprintf('Trial %d: %0.1f uL. ValveTime: %0.1f ms. AccumulatedReward: %0.1f uL\n',...
         currentTrial,RewardAmount,RewardValveTime*1000,AccumulatedReward);
      
     % Calculate ITI for this trial
