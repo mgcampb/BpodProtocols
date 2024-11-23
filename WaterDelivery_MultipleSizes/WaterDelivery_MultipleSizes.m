@@ -12,7 +12,7 @@ global BpodSystem
 
 S = BpodSystem.ProtocolSettings; % Loads settings file chosen in launch manager into current workspace as a struct called 'S'
 S.Experimenter = 'Malcolm';
-S.RewardAmounts = [0.5 1 2 4 8 16]; % [2 8];
+S.RewardAmounts = [2 8];
 S.MaxWater = 1000; % in uL
 S.ITIDistribution = 'Exponential';
 S.ITIMean = 12; % changed from 10 10/20/2022
