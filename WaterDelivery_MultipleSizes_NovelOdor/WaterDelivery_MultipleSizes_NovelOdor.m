@@ -35,9 +35,9 @@ S.Mouse = mouse;
 S.RewardAmounts = [2 8];
 S.MaxWater = 1000; % in uL
 S.ITIDistribution = 'Exponential';
-S.ITIMean = 20; % changed from 10 10/20/2022
-S.ITIMin = 12; % changed from 4 10/20/2022
-S.ITIMax = 40;
+S.ITIMean = 12; % changed from 10 10/20/2022
+S.ITIMin = 8; % changed from 4 10/20/2022
+S.ITIMax = 20;
 S.ForeperiodDuration = 0.5;
 S.OdorDuration = 1; % seconds
 

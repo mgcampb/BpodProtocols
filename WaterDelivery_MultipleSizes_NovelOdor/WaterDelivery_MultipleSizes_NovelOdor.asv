@@ -35,7 +35,7 @@ S.Mouse = mouse;
 S.RewardAmounts = [2 8];
 S.MaxWater = 1000; % in uL
 S.ITIDistribution = 'Exponential';
-S.ITIMean = 20; % changed from 10 10/20/2022
+S.ITIMean = 10; % changed from 10 10/20/2022
 S.ITIMin = 12; % changed from 4 10/20/2022
 S.ITIMax = 30;
 S.ForeperiodDuration = 0.5;
@@ -68,15 +68,14 @@ AccumulatedReward = 0;
 
 
 %% create odor trials
-
-chunk = floor(NumWaterTrials/NumOdorTrials);
+offset = 0;
+chunk = floor((NumWaterTrials-offset)/NumOdorTrials);
 for trIdx = 1:NumOdorTrials
     tr_this = offset+randperm(chunk,1);
-    TrialTypes = [TrialTypes(1:tr_this) S.NumOdors TrialTypes(tr_this+1:end)];
-    RewardTrials = [RewardTrials(1:tr_this) 0 RewardTrials(tr_this+1:end)];
+    RewardAmounts_all = [RewardAmounts_all(1:tr_this); 0; RewardAmounts_all(tr_this+1:end)];
     offset = offset+chunk+1;
 end
-keyboard;
+
 
 %% Setup: Initialize plots 
 
@@ -102,22 +101,23 @@ for currentTrial = 1:MaxTrials
     %--- Typically, a block of code here will compute variables for assembling this trial's state machine
     RewardAmount = RewardAmounts_all(currentTrial);
     RewardValveTime = GetValveTimes(RewardAmount, 1);
-    
-    AccumulatedReward = AccumulatedReward+RewardAmount;
-    if RewardAmount==0 % odor trials
-        OutcomeState = 'Odor';
-        ValveMessage = 2;
-        fprintf('Trial %d: ODOR\n',currentTrial);
-    else % reward trials
-        OutcomeState = 'Reward';
-        fprintf('Trial %d: REWARD %0.1f uL. ValveTime: %0.1f ms. AccumulatedReward: %0.1f uL\n',...
-            currentTrial,RewardAmount,RewardValveTime*1000,AccumulatedReward);
-    end
-     
+
     % Calculate ITI for this trial
     ITIDuration = exprnd(S.ITIMean);
     while ITIDuration < S.ITIMin || ITIDuration > S.ITIMax
         ITIDuration = exprnd(S.ITIMean);
+    end
+    
+    AccumulatedReward = AccumulatedReward+RewardAmount;
+    ValveMessage = 2; % Just one odor
+    if RewardAmount==0 % odor trials
+        OutcomeState = 'Odor';
+        fprintf('Trial %d: ODOR \t\t\t\t AccumulatedReward: %0.1f uL \t\t ITI: %0.1f sec\n',...
+            currentTrial,AccumulatedReward,ITIDuration);
+    else % reward trials
+        OutcomeState = 'Reward';
+        fprintf('Trial %d: REWARD %0.1f uL \t AccumulatedReward: %0.1f uL \t\t ITI: %0.1f sec\n',...
+            currentTrial,RewardAmount,AccumulatedReward,ITIDuration);
     end
 
     %--- Assemble state machine
@@ -134,11 +134,11 @@ for currentTrial = 1:MaxTrials
     sma = AddState(sma, 'Name', 'Reward',...
         'Timer', RewardValveTime,...
         'StateChangeConditions', {'Tup', 'ITI'},...
-        'OutputActions', {'ValveState',1,'BNC1', 0, 'BNC2', 0});
+        'OutputActions', {'ValveState', 1,'BNC1', 0, 'BNC2', 0});
     sma = AddState(sma, 'Name', 'ITI',...
         'Timer', ITIDuration,...
         'StateChangeConditions', {'Tup', 'exit'},...
-        'OutputActions', {'BNC1', 0, 'BNC2', 0});
+        'OutputActions', {'ValveModule1', 1, 'BNC1', 0, 'BNC2', 0});
 
     % Send state machine to Bpod device
     SendStateMatrix(sma);
@@ -150,7 +150,6 @@ for currentTrial = 1:MaxTrials
         % Save trial data
         BpodSystem.Data = AddTrialEvents(BpodSystem.Data, RawEvents);
         BpodSystem.Data.TrialSettings(currentTrial) = S;
-        BpodSystem.Data.TrialTypes(currentTrial) = TrialType;
         BpodSystem.Data.AccumulatedReward(currentTrial) = AccumulatedReward; 
         BpodSystem.Data.RewardSize(currentTrial) = RewardAmount;
         BpodSystem.Data.OdorTrials(currentTrial) = RewardAmount==0;
