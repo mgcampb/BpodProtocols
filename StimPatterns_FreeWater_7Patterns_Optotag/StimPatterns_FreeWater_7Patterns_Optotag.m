@@ -28,14 +28,6 @@ COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignor
 
 mouse = BpodSystem.Status.CurrentSubjectName;
 
-NumOptotagTrials1 = 60;
-NumRewardTrials1 = 2*6;
-NumStimTrials1 = 7*15;
-NumRewardTrials2 = 2*6;
-NumStimTrials2 = 7*15;
-NumRewardTrials3 = 2*6;
-NumOptotagTrials2 = 60;
-
 BpodSystem.Data.TaskDescription = 'Optotag1 Rewards1 StimTrials1 Rewards2 StimTrials2 Rewards3 Optotag2';
 
 % Task parameters
@@ -45,6 +37,15 @@ S = BpodSystem.ProtocolSettings;
 S.Experimenter = 'Malcolm';
 S.Mouse = mouse;
 S.NumPatterns = 7;
+
+% Num trials
+S.NumOptotagTrials1 = 60;
+S.NumRewardTrials1 = 2*6;
+S.NumStimTrials1 = 7*15;
+S.NumRewardTrials2 = 2*6;
+S.NumStimTrials2 = 7*15;
+S.NumRewardTrials3 = 2*6;
+S.NumOptotagTrials2 = 60;
 
 % ITI duration - note different values for optotag trials
 S.ITIMean = 12;
@@ -69,7 +70,7 @@ OptotagStateDuration = ceil(S.OptotagPulseNum/S.OptotagPulseFreq); % seconds
 fprintf('\nSession parameters:\n')
 S
 fprintf('NumOptotagTrials1 = %d\nNumRewardTrials1 = %d\nNumStimTrials1 = %d\nNumRewardTrials2 = %d\nNumStimTrials2 = %d\nNumRewardTrials3 = %d\nNumOptotagTrials2 = %d\n',...
-    NumOptotagTrials1,NumRewardTrials1,NumStimTrials1,NumRewardTrials2,NumStimTrials2,NumRewardTrials3,NumOptotagTrials2);
+    S.NumOptotagTrials1,S.NumRewardTrials1,S.NumStimTrials1,S.NumRewardTrials2,S.NumStimTrials2,S.NumRewardTrials3,S.NumOptotagTrials2);
 
 
 %% Define reward trial types
@@ -80,8 +81,8 @@ rewardsPerBlock = 2;
 blockSize = rewardsPerBlock*nRewardAmounts;
 
 % Rewards1:
-RewardAmounts1 = nan(NumRewardTrials1, 1);
-nBlocks = NumRewardTrials1/blockSize;
+RewardAmounts1 = nan(S.NumRewardTrials1, 1);
+nBlocks = S.NumRewardTrials1/blockSize;
 counter = 1;
 for i = 1:nBlocks
     RewardAmount = repmat(S.RewardAmounts,1,rewardsPerBlock);
@@ -91,8 +92,8 @@ for i = 1:nBlocks
 end
 
 % Rewards2:
-RewardAmounts2 = nan(NumRewardTrials2, 1);
-nBlocks = NumRewardTrials2/blockSize;
+RewardAmounts2 = nan(S.NumRewardTrials2, 1);
+nBlocks = S.NumRewardTrials2/blockSize;
 counter = 1;
 for i = 1:nBlocks
     RewardAmount = repmat(S.RewardAmounts,1,rewardsPerBlock);
@@ -102,8 +103,8 @@ for i = 1:nBlocks
 end
 
 % Rewards3:
-RewardAmounts3 = nan(NumRewardTrials3, 1);
-nBlocks = NumRewardTrials3/blockSize;
+RewardAmounts3 = nan(S.NumRewardTrials3, 1);
+nBlocks = S.NumRewardTrials3/blockSize;
 counter = 1;
 for i = 1:nBlocks
     RewardAmount = repmat(S.RewardAmounts,1,rewardsPerBlock);
@@ -118,21 +119,21 @@ TargetChunkSize = 7; % trials; chunk size in which to balance trial types
 ActualChunkSize = S.NumPatterns*round(TargetChunkSize/S.NumPatterns);
 TrialTypesChunk = repmat(1:S.NumPatterns,1,ActualChunkSize/S.NumPatterns);
 
-NumChunks1 = ceil(NumStimTrials1/ActualChunkSize);
+NumChunks1 = ceil(S.NumStimTrials1/ActualChunkSize);
 TrialTypes1 = [];
 for i = 1:NumChunks1
     perm_idx = randperm(ActualChunkSize);
     TrialTypes1 = [TrialTypes1 TrialTypesChunk(perm_idx)];
 end
-TrialTypes1 = TrialTypes1(1:NumStimTrials1);
+TrialTypes1 = TrialTypes1(1:S.NumStimTrials1);
 
-NumChunks2 = ceil(NumStimTrials2/ActualChunkSize);
+NumChunks2 = ceil(S.NumStimTrials2/ActualChunkSize);
 TrialTypes2 = [];
 for i = 1:NumChunks2
     perm_idx = randperm(ActualChunkSize);
     TrialTypes2 = [TrialTypes2 TrialTypesChunk(perm_idx)];
 end
-TrialTypes2 = TrialTypes2(1:NumStimTrials2);
+TrialTypes2 = TrialTypes2(1:S.NumStimTrials2);
 
 
 %% Set up WavePlayer (Analog Output Module for controlling lasers)
@@ -213,8 +214,11 @@ S.stimWaveforms = {waveform_1secSquare_20Hz,waveform_2secSquare_20Hz,waveform_ra
 
 %% Optotag1
 tic
-fprintf('\nOptotag1 (%d trials)\n', NumOptotagTrials1);
-for currentTrial = 1:NumOptotagTrials1
+total_trial_ctr = 0;
+fprintf('\nOptotag1 (%d trials)\n', S.NumOptotagTrials1);
+for currentTrial = 1:S.NumOptotagTrials1
+    
+    total_trial_ctr = total_trial_ctr+1;
 
     % Calculate ITI for this trial
     ITIDuration = unifrnd(S.ITIMin_optotag,S.ITIMax_optotag);
@@ -250,7 +254,7 @@ for currentTrial = 1:NumOptotagTrials1
     if ~isempty(fieldnames(RawEvents))
         
         BpodSystem.Data = AddTrialEvents(BpodSystem.Data, RawEvents);
-        BpodSystem.Data.TrialSettings(currentTrial) = S;
+        BpodSystem.Data.TrialSettings(total_trial_ctr) = S;
 
         SaveBpodSessionData;
 
@@ -271,8 +275,10 @@ pause(10);
 
 %% Rewards1
 AccumulatedReward = 0;
-fprintf('\nRewards1 (%d trials)\n', NumRewardTrials1);
-for currentTrial = 1:NumRewardTrials1
+fprintf('\nRewards1 (%d trials)\n', S.NumRewardTrials1);
+for currentTrial = 1:S.NumRewardTrials1
+    
+    total_trial_ctr = total_trial_ctr+1;
 
     RewardAmount = RewardAmounts1(currentTrial);
     RewardValveTime = GetValveTimes(RewardAmount, 1);
@@ -323,7 +329,7 @@ for currentTrial = 1:NumRewardTrials1
     if ~isempty(fieldnames(RawEvents))
         
         BpodSystem.Data = AddTrialEvents(BpodSystem.Data, RawEvents);
-        BpodSystem.Data.TrialSettings(currentTrial) = S;
+        BpodSystem.Data.TrialSettings(total_trial_ctr) = S;
 
         SaveBpodSessionData;
 
@@ -343,8 +349,10 @@ pause(10);
 
 
 %% StimTrials1
-fprintf('\nStim trials1 (%d trials)\n', NumStimTrials1);
-for currentTrial = 1:NumStimTrials1
+fprintf('\nStim trials1 (%d trials)\n', S.NumStimTrials1);
+for currentTrial = 1:S.NumStimTrials1
+    
+    total_trial_ctr = total_trial_ctr+1;
     
     TrialType = TrialTypes1(currentTrial);
     
@@ -400,7 +408,7 @@ for currentTrial = 1:NumStimTrials1
     if ~isempty(fieldnames(RawEvents))
         % Save trial data
         BpodSystem.Data = AddTrialEvents(BpodSystem.Data, RawEvents);
-        BpodSystem.Data.TrialSettings(currentTrial+NumRewardTrials1) = S;
+        BpodSystem.Data.TrialSettings(total_trial_ctr) = S;
         BpodSystem.Data.TrialTypes1(currentTrial) = TrialType;
         SaveBpodSessionData;
         
@@ -423,8 +431,10 @@ pause(10);
 
 %% Rewards2
 
-fprintf('\nRewards2 (%d trials)\n', NumRewardTrials2);
-for currentTrial = 1:NumRewardTrials2
+fprintf('\nRewards2 (%d trials)\n', S.NumRewardTrials2);
+for currentTrial = 1:S.NumRewardTrials2
+    
+    total_trial_ctr = total_trial_ctr+1;
 
     RewardAmount = RewardAmounts2(currentTrial);
     RewardValveTime = GetValveTimes(RewardAmount, 1);
@@ -475,7 +485,7 @@ for currentTrial = 1:NumRewardTrials2
     if ~isempty(fieldnames(RawEvents))
         
         BpodSystem.Data = AddTrialEvents(BpodSystem.Data, RawEvents);
-        BpodSystem.Data.TrialSettings(currentTrial+NumRewardTrials1+NumStimTrials1) = S;
+        BpodSystem.Data.TrialSettings(total_trial_ctr) = S;
 
         SaveBpodSessionData;
 
@@ -495,8 +505,10 @@ pause(10);
 
 
 %% StimTrials2
-fprintf('\nStim trials2 (%d trials)\n', NumStimTrials2);
-for currentTrial = 1:NumStimTrials2
+fprintf('\nStim trials2 (%d trials)\n', S.NumStimTrials2);
+for currentTrial = 1:S.NumStimTrials2
+    
+    total_trial_ctr = total_trial_ctr+1;
     
     TrialType = TrialTypes2(currentTrial);
     
@@ -552,7 +564,7 @@ for currentTrial = 1:NumStimTrials2
     if ~isempty(fieldnames(RawEvents))
         % Save trial data
         BpodSystem.Data = AddTrialEvents(BpodSystem.Data, RawEvents);
-        BpodSystem.Data.TrialSettings(currentTrial+NumRewardTrials1+NumStimTrials1+NumRewardTrials2) = S;
+        BpodSystem.Data.TrialSettings(total_trial_ctr) = S;
         BpodSystem.Data.TrialTypes2(currentTrial) = TrialType;
         SaveBpodSessionData;
         
@@ -575,8 +587,10 @@ pause(10);
 
 %% Rewards3
 
-fprintf('\nRewards3 (%d trials)\n', NumRewardTrials3);
-for currentTrial = 1:NumRewardTrials3
+fprintf('\nRewards3 (%d trials)\n', S.NumRewardTrials3);
+for currentTrial = 1:S.NumRewardTrials3
+    
+    total_trial_ctr = total_trial_ctr+1;
 
     RewardAmount = RewardAmounts3(currentTrial);
     RewardValveTime = GetValveTimes(RewardAmount, 1);
@@ -627,7 +641,7 @@ for currentTrial = 1:NumRewardTrials3
     if ~isempty(fieldnames(RawEvents))
         
         BpodSystem.Data = AddTrialEvents(BpodSystem.Data, RawEvents);
-        BpodSystem.Data.TrialSettings(currentTrial+NumRewardTrials1+NumStimTrials1+NumRewardTrials2+NumStimTrials2) = S;
+        BpodSystem.Data.TrialSettings(total_trial_ctr) = S;
 
         SaveBpodSessionData;
 
@@ -648,8 +662,11 @@ pause(10);
 
 %% Optotag2
 
-fprintf('\nOptotag2 (%d trials)\n', NumOptotagTrials2);
-for currentTrial = 1:NumOptotagTrials2
+fprintf('\nOptotag2 (%d trials)\n', S.NumOptotagTrials2);
+for currentTrial = 1:S.NumOptotagTrials2
+    
+    total_trial_ctr = total_trial_ctr+1;
+    
     % Calculate ITI for this trial
     ITIDuration = unifrnd(S.ITIMin_optotag,S.ITIMax_optotag);
 
@@ -684,7 +701,7 @@ for currentTrial = 1:NumOptotagTrials2
     if ~isempty(fieldnames(RawEvents))
         
         BpodSystem.Data = AddTrialEvents(BpodSystem.Data, RawEvents);
-        BpodSystem.Data.TrialSettings(currentTrial) = S;
+        BpodSystem.Data.TrialSettings(total_trial_ctr) = S;
 
         SaveBpodSessionData;
 
