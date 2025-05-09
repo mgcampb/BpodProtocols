@@ -30,9 +30,9 @@ mouse = BpodSystem.Status.CurrentSubjectName;
 
 NumOptotagTrials1 = 60;
 NumRewardTrials1 = 2*6;
-NumStimTrials1 = 7*14;
+NumStimTrials1 = 7*15;
 NumRewardTrials2 = 2*6;
-NumStimTrials2 = 7*14;
+NumStimTrials2 = 7*15;
 NumRewardTrials3 = 2*6;
 NumOptotagTrials2 = 60;
 
@@ -213,7 +213,7 @@ S.stimWaveforms = {waveform_1secSquare_20Hz,waveform_2secSquare_20Hz,waveform_ra
 
 %% Optotag1
 tic
-fprintf('\nOptotag1\n')
+fprintf('\nOptotag1 (%d trials)\n', NumOptotagTrials1);
 for currentTrial = 1:NumOptotagTrials1
 
     % Calculate ITI for this trial
@@ -271,7 +271,7 @@ pause(10);
 
 %% Rewards1
 AccumulatedReward = 0;
-fprintf('\nRewards1\n');
+fprintf('\nRewards1 (%d trials)\n', NumRewardTrials1);
 for currentTrial = 1:NumRewardTrials1
 
     RewardAmount = RewardAmounts1(currentTrial);
@@ -343,7 +343,7 @@ pause(10);
 
 
 %% StimTrials1
-fprintf('\nStim trials1\n');
+fprintf('\nStim trials1 (%d trials)\n', NumStimTrials1);
 for currentTrial = 1:NumStimTrials1
     
     TrialType = TrialTypes1(currentTrial);
@@ -423,7 +423,7 @@ pause(10);
 
 %% Rewards2
 
-fprintf('\nRewards2\n')
+fprintf('\nRewards2 (%d trials)\n', NumRewardTrials2);
 for currentTrial = 1:NumRewardTrials2
 
     RewardAmount = RewardAmounts2(currentTrial);
@@ -495,7 +495,7 @@ pause(10);
 
 
 %% StimTrials2
-fprintf('\nStim trials2\n');
+fprintf('\nStim trials2 (%d trials)\n', NumStimTrials2);
 for currentTrial = 1:NumStimTrials2
     
     TrialType = TrialTypes2(currentTrial);
@@ -575,7 +575,7 @@ pause(10);
 
 %% Rewards3
 
-fprintf('\nRewards3\n')
+fprintf('\nRewards3 (%d trials)\n', NumRewardTrials3);
 for currentTrial = 1:NumRewardTrials3
 
     RewardAmount = RewardAmounts3(currentTrial);
@@ -648,7 +648,7 @@ pause(10);
 
 %% Optotag2
 
-fprintf('\nOptotag2\n')
+fprintf('\nOptotag2 (%d trials)\n', NumOptotagTrials2);
 for currentTrial = 1:NumOptotagTrials2
     % Calculate ITI for this trial
     ITIDuration = unifrnd(S.ITIMin_optotag,S.ITIMax_optotag);
