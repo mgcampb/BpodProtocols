@@ -61,6 +61,7 @@ S.PulseDur = 0.001;
 S.OptotagPulseFreq = 10;
 S.OptotagPulseDur = 0.02;
 S.OptotagPulseNum = 1;
+S.OptotagLightPower_mW = 10;
 S.ITIMin_optotag = 1; % different ITI for optotagging trials (uniform distribution)
 S.ITIMax_optotag = 3;
 % Duration of Optotag state (based on parameters in S)
@@ -69,8 +70,6 @@ OptotagStateDuration = ceil(S.OptotagPulseNum/S.OptotagPulseFreq); % seconds
 % display parameters
 fprintf('\nSession parameters:\n')
 S
-fprintf('NumOptotagTrials1 = %d\nNumRewardTrials1 = %d\nNumStimTrials1 = %d\nNumRewardTrials2 = %d\nNumStimTrials2 = %d\nNumRewardTrials3 = %d\nNumOptotagTrials2 = %d\n',...
-    S.NumOptotagTrials1,S.NumRewardTrials1,S.NumStimTrials1,S.NumRewardTrials2,S.NumStimTrials2,S.NumRewardTrials3,S.NumOptotagTrials2);
 
 
 %% Define reward trial types
