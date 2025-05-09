@@ -30,11 +30,11 @@ mouse = BpodSystem.Status.CurrentSubjectName;
 
 NumOptotagTrials1 = 60;
 NumRewardTrials1 = 2*6;
-NumStimTrials1 = 7*14;
+NumStimTrials1 = 7*15;
 NumRewardTrials2 = 2*6;
-NumStimTrials2 = 7*14;
+NumStimTrials2 = 7*15;
 NumRewardTrials3 = 2*6;
-NumOptotagTrials2 = 60;
+NumOptotagTrials2 = 80;
 
 BpodSystem.Data.TaskDescription = 'Optotag1 Rewards1 StimTrials1 Rewards2 StimTrials2 Rewards3 Optotag2';
 
