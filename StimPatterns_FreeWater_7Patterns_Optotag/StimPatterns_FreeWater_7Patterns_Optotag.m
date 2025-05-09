@@ -222,7 +222,7 @@ for currentTrial = 1:S.NumOptotagTrials1
     % Calculate ITI for this trial
     ITIDuration = unifrnd(S.ITIMin_optotag,S.ITIMax_optotag);
 
-    fprintf('\tTrial %d\tITI=%0.1fs\n',currentTrial,ITIDuration);
+    fprintf('\tTrial %d:\tITI=%0.1fs\n',currentTrial,ITIDuration);
 
     %--- Assemble state machine
     sma = NewStateMatrix();
@@ -669,7 +669,7 @@ for currentTrial = 1:S.NumOptotagTrials2
     % Calculate ITI for this trial
     ITIDuration = unifrnd(S.ITIMin_optotag,S.ITIMax_optotag);
 
-    fprintf('\tTrial %d\tITI=%0.1fs\n',currentTrial,ITIDuration);
+    fprintf('\tTrial %d:\tITI=%0.1fs\n',currentTrial,ITIDuration);
 
     %--- Assemble state machine
     sma = NewStateMatrix();
