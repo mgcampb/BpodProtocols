@@ -14,7 +14,7 @@ MaxTrials = 30; % Max number of trials
 % Task parameters
 S = BpodSystem.ProtocolSettings; % contains valve order for this mouse in field OdorValvesOdor
 
-S.NumLasers = 3;
+S.NumLasers = 2;
 % These parameters are shared across animals:
 S.ForeperiodDuration = 0.5; % seconds
 

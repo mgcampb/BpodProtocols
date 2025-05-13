@@ -54,8 +54,8 @@ S.ITIMax = 20;
 S.RewardAmounts = [2 8];
 S.ForeperiodDuration = 0.5;
 
-S.StimPower_mW = 5; % input('Stim LED power (mW): ');
-S.PulseDur = 0.001;
+S.StimPower_mW = 1; % input('Stim LED power (mW): ');
+S.PulseDur = 0.005;
 
 % optotag pulse options:
 S.OptotagPulseFreq = 10;
