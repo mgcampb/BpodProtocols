@@ -30,7 +30,7 @@ COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignor
 
 mouse = BpodSystem.Status.CurrentSubjectName;
 
-BpodSystem.Data.TaskDescription = 'Optotag1 Rewards1 SinglePulse1 StimTrials1 Rewards2 SinglePulse2 StimTrials2 Rewards3 Optotag2';
+BpodSystem.Data.TaskDescription = 'Optotag1 Rewards1 SinglePulse1 StimTrials1 Rewards2 StimTrials2 Rewards3 Optotag2';
 
 % Task parameters
 S = BpodSystem.ProtocolSettings; 
@@ -41,15 +41,15 @@ S.Mouse = mouse;
 S.NumPatterns = 3;
 
 % Num trials
-S.NumOptotagTrials1 = 60;
-S.NumRewardTrials1 = 2*6;
-S.NumSinglePulseTrials1 = 100;
-S.NumStimTrials1 = S.NumPatterns*15;
-S.NumRewardTrials2 = 2*6;
-S.NumSinglePulseTrials2 = 100;
-S.NumStimTrials2 = S.NumPatterns*15;
-S.NumRewardTrials3 = 2*6;
-S.NumOptotagTrials2 = 60;
+S.NumOptotagTrials1 = 5; % 60;
+S.NumRewardTrials1 = 2; % 2*6;
+S.NumSinglePulseTrials1 = 5; % 100;
+S.NumStimTrials1 = 3; % S.NumPatterns*15;
+S.NumRewardTrials2 = 2; % 2*6;
+S.NumSinglePulseTrials2 = 5; % 100;
+S.NumStimTrials2 = 3; % S.NumPatterns*15;
+S.NumRewardTrials3 = 2; %2*6;
+S.NumOptotagTrials2 = 5; %60;
 
 % ITI duration - note different values for optotag trials
 S.ITIMean = 12;
@@ -75,7 +75,7 @@ OptotagStateDuration = ceil(S.OptotagPulseNum/S.OptotagPulseFreq); % seconds
 % single D1 stim pulse options:
 S.ITIMin_single_pulse = 1;
 S.ITIMax_single_pulse = 3;
-SinglePulseStateDuration = 1; % seconds
+S.SinglePulseStateDuration = 1; % seconds
 
 % display parameters
 fprintf('\nSession parameters:\n')
