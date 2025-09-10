@@ -1,4 +1,4 @@
-function StimPatterns_FreeWater_3Patterns_SinglePulse_Optotag
+function StimPatterns_FreeWater_7Ramps_Optotag
 
 % M. Campbell 8/2/2021: Protocol to deliver odors followed by laser pulses.
 % M. Campbell 12/1/2021: Edited OdorLaser to create OdorLaserWater task.
@@ -18,8 +18,6 @@ function StimPatterns_FreeWater_3Patterns_SinglePulse_Optotag
 % M. Campbell 7/16/2024: 7 stim patterns (original 4 plus three more: 3 sec
 %   square wave at 5, 10, 20 Hz)
 % M. Campbell 5/8/2025: Added optotagging trials to beginning and end
-% C. Chen and M. Campbell 5/27/2025: Changed patterns 1,2,5,6 to a single
-%   pulse
 
 global BpodSystem
 
@@ -30,7 +28,7 @@ COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignor
 
 mouse = BpodSystem.Status.CurrentSubjectName;
 
-BpodSystem.Data.TaskDescription = 'Optotag1 Rewards1 SinglePulse1 StimTrials1 Rewards2 SinglePulse2 StimTrials2 Rewards3 Optotag2';
+BpodSystem.Data.TaskDescription = 'Optotag1 Rewards1 StimTrials1 Rewards2 StimTrials2 Rewards3 Optotag2';
 
 % Task parameters
 S = BpodSystem.ProtocolSettings; 
@@ -38,16 +36,14 @@ S = BpodSystem.ProtocolSettings;
 % These parameters are shared across animals:
 S.Experimenter = 'Malcolm';
 S.Mouse = mouse;
-S.NumPatterns = 3;
+S.NumPatterns = 7;
 
 % Num trials
-S.NumOptotagTrials1 = 60;
+S.NumOptotagTrials1 = 60; 
 S.NumRewardTrials1 = 2*6;
-S.NumSinglePulseTrials1 = 100;
-S.NumStimTrials1 = S.NumPatterns*20;
+S.NumStimTrials1 = 7*15;
 S.NumRewardTrials2 = 2*6;
-S.NumSinglePulseTrials2 = 100;
-S.NumStimTrials2 = S.NumPatterns*20;
+S.NumStimTrials2 = 7*15;
 S.NumRewardTrials3 = 2*6;
 S.NumOptotagTrials2 = 60;
 
@@ -55,6 +51,7 @@ S.NumOptotagTrials2 = 60;
 S.ITIMean = 12;
 S.ITIMin = 8;
 S.ITIMax = 20;
+
 S.RewardAmounts = [2 8];
 S.ForeperiodDuration = 0.5;
 
@@ -72,11 +69,8 @@ S.ITIMax_optotag = 3;
 OptotagStateDuration = ceil(S.OptotagPulseNum/S.OptotagPulseFreq); % seconds
 
 
-% single D1 stim pulse options:
-S.ITIMin_single_pulse = 1;
-S.ITIMax_single_pulse = 3;
-SinglePulseStateDuration = 1; % seconds
-
+S.waveformTimeVec1 = cell(S.NumStimTrials1,1);
+S.waveformTimeVec2 = cell(S.NumStimTrials2, 1);
 % display parameters
 fprintf('\nSession parameters:\n')
 S
@@ -124,7 +118,7 @@ end
 
 
 %% Define stim trial types
-TargetChunkSize = S.NumPatterns; % trials; chunk size in which to balance trial types
+TargetChunkSize = 7; % trials; chunk size in which to balance trial types
 ActualChunkSize = S.NumPatterns*round(TargetChunkSize/S.NumPatterns);
 TrialTypesChunk = repmat(1:S.NumPatterns,1,ActualChunkSize/S.NumPatterns);
 
@@ -153,38 +147,55 @@ W.OutputRange = '0V:5V';
 
 % Stim patterns: 
 
-% 1) 2 sec ramping up
-waveform_rampUp = [];
-freq = 4;
-for i = 1:24
-    numOnes = S.PulseDur*SR;
-    numZeros = round(SR/freq)-numOnes;
-    waveform_rampUp = [waveform_rampUp 5*ones(1,numOnes) zeros(1,numZeros)];
-    freq = freq*1.135; 
-end
-W.loadWaveform(1,waveform_rampUp);
+% Stim functions:
+% exponential_func(t, ramping_rates, target_time)
+%   returns 50/(r^T–1) * (r^t–1) where 50 is the target final firing rate
+exponential_func = @(t, r, T) 50 ./ (r.^T - 1) .* (r.^t - 1);
 
-% 2) 2 sec ramping down
-waveform_rampDown = fliplr(waveform_rampUp);
-waveform_rampDown = [waveform_rampDown(87:end) zeros(1,86)]; % align to zero
-W.loadWaveform(2,waveform_rampDown);
+% linear_slow(t, area, target_time)
+%   returns (2*area/T^2) * t
+linear_slow = @(t, A, T) (2*A ./ T.^2) .* t;
 
-% 3) 3 sec at 20 Hz
-waveform_3secSquare_20Hz = zeros(1,round(SR/20));
-waveform_3secSquare_20Hz(1:(S.PulseDur * SR)) = 5;
-waveform_3secSquare_20Hz = repmat(waveform_3secSquare_20Hz,1,60);
-W.loadWaveform(3,waveform_3secSquare_20Hz);
+% linear_fast(t, area, target_time, final_firing_rate)
+%   implements:
+%     shift = T - 2*A / F
+%     rate  = F / (T - shift)
+%     out   = rate*(t-shift)  for t>=shift, else 0
+linear_fast = @(t, A, T, F) ...
+    (t >= (T - 2*A./F)) .* ...
+     ( (F ./ (T - (T - 2*A./F))) .* (t - (T - 2*A./F)) );
 
-% 4) Optotag message (one 20 ms pulse)
+t = linspace(0, 2, 2*SR);
+
+% 1) exponential function, ramping rate = 2, target time = 2
+y1 = exponential_func(t, 2, 2); 
+area1 = quad(@(t) exponential_func(t, 2, 2), 0, 2);
+
+% 2) exponential function, ramping rate = 5, target time = 2
+y2 = exponential_func(t, 5, 2); 
+area2 = quad(@(t) exponential_func(t, 5, 2), 0, 2);
+
+% 3) exponential function, ramping rate = 10, target time = 2
+y3 = exponential_func(t, 10, 2); 
+
+% 4) slow linear function, ramping rate = 2, target time = 2
+y4 = linear_slow(t, area1, 2);
+
+% 5 fast linear function, ramping rate = 2, target time = 2
+y5 = linear_fast(t, area1, 2, 50); % 50 is the target final firing rate, same as other functions
+
+% 6) slow linear function, ramping rate = 5, target time = 2
+y6 = linear_slow(t, area2, 2);
+
+% 7) slow linear function, ramping rate = 5, target time = 2
+y7 = linear_fast(t, area2, 2, 50);
+
+
+% 8) Optotag message (one 20 ms pulse)
 waveform_optotag = zeros(1,round(SR/S.OptotagPulseFreq));
 waveform_optotag(1:(S.OptotagPulseDur * SR)) = 5;
 waveform_optotag = repmat(waveform_optotag,1,S.OptotagPulseNum);
-W.loadWaveform(S.NumPatterns+1,waveform_optotag);
-
-% 5) Single pulse
-waveform_single_pulse = zeros(1,round(SR/20));
-waveform_single_pulse(1:(S.PulseDur * SR)) = 5;
-W.loadWaveform(S.NumPatterns+2,waveform_single_pulse);
+W.loadWaveform(8,waveform_optotag);
 
 % load waveforms to WavePlayer:
 WavePlayerMessages = {};
@@ -194,14 +205,13 @@ for patternIdx = 1:S.NumPatterns
     WavePlayerMessages = [WavePlayerMessages {['P' 2^(redStim_idx-1) patternIdx-1]}]; % send waveform patternIdx to the LED_idx'th channel
 end
 WavePlayerMessages = [WavePlayerMessages {['P' 2^(blueStim_idx-1) S.NumPatterns]}]; % send optotag message
-WavePlayerMessages = [WavePlayerMessages {['P' 2^(redStim_idx-1) S.NumPatterns+1]}]; % send single_pulse message
 LoadSerialMessages('WavePlayer1', WavePlayerMessages);
 
 % save waveforms to bpod output structure S (task parameters):
 S.stimWaveforms = {};
-S.stimWaveforms = {waveform_rampUp,waveform_rampDown,waveform_3secSquare_20Hz};
-
-
+S.stimFunctions = {y1, y2, y3, y4, y5, y6, y7};
+% insufficient memory to save all stimWaveforms
+% save stimTimeVector instead
 %% Optotag1
 tic
 total_trial_ctr = 0;
@@ -230,6 +240,11 @@ for currentTrial = 1:S.NumOptotagTrials1
         'Timer', ITIDuration,...
         'StateChangeConditions', {'Tup','exit'},...
         'OutputActions', {'BNC1',0,'BNC2',0});
+
+    % Add the odor states so that pokes plot doesn't get messed up:
+    for tt = 1:S.NumPatterns
+        sma = AddState(sma, 'Name', sprintf('Stim%d',tt),'Timer', 0,'StateChangeConditions',{},'OutputActions', {}); 
+    end
     
     SendStateMatrix(sma); % Send state machine to the Bpod state machine device
 
@@ -294,6 +309,15 @@ for currentTrial = 1:S.NumRewardTrials1
         'Timer', ITIDuration,...
         'StateChangeConditions', {'Tup','exit'},...
         'OutputActions', {'BNC1',0,'BNC2',0});
+    sma = AddState(sma, 'Name', 'Optotag', ... 
+        'Timer', OptotagStateDuration,...
+        'StateChangeConditions', {'Tup', 'ITI'},...
+        'OutputActions', {'WavePlayer1', S.NumPatterns+1, 'BNC1', 0, 'BNC2', 0}); 
+
+    % Add the odor states so that pokes plot doesn't get messed up:
+    for tt = 1:S.NumPatterns
+        sma = AddState(sma, 'Name', sprintf('Stim%d',tt),'Timer', 0,'StateChangeConditions',{},'OutputActions', {}); 
+    end
     
     SendStateMatrix(sma); % Send state machine to the Bpod state machine device
 
@@ -319,61 +343,6 @@ for currentTrial = 1:S.NumRewardTrials1
 end
 
 fprintf('Rewards1 finished\n');
-toc;
-
-pause(10);
-
-
-%% SinglePulse1
-tic
-fprintf('\nSinglePulse1 (%d trials)\n', S.NumSinglePulseTrials1);
-for currentTrial = 1:S.NumSinglePulseTrials1
-    
-    total_trial_ctr = total_trial_ctr+1;
-
-    % Calculate ITI for this trial
-    ITIDuration = unifrnd(S.ITIMin_single_pulse,S.ITIMax_single_pulse);
-
-    fprintf('\tTrial %d:\tITI=%0.1fs\n',currentTrial,ITIDuration);
-
-    %--- Assemble state machine
-    sma = NewStateMatrix();
-    
-    sma = AddState(sma,'Name','Foreperiod',...
-        'Timer',S.ForeperiodDuration,...
-        'StateChangeConditions',{'Tup','SinglePulse'},...
-        'OutputActions',{'BNC1',1,'BNC2',1});
-    sma = AddState(sma, 'Name', 'SinglePulse', ... 
-        'Timer', SinglePulseStateDuration,...
-        'StateChangeConditions', {'Tup', 'ITI'},...
-        'OutputActions', {'WavePlayer1', S.NumPatterns+2, 'BNC1', 0, 'BNC2', 0}); 
-    sma = AddState(sma, 'Name', 'ITI', ... 
-        'Timer', ITIDuration,...
-        'StateChangeConditions', {'Tup','exit'},...
-        'OutputActions', {'BNC1',0,'BNC2',0});
-    
-    SendStateMatrix(sma); % Send state machine to the Bpod state machine device
-
-    RawEvents = RunStateMatrix; % Run the trial and return events
-
-    % Update online plots
-    if ~isempty(fieldnames(RawEvents))
-        
-        BpodSystem.Data = AddTrialEvents(BpodSystem.Data, RawEvents);
-        BpodSystem.Data.TrialSettings(total_trial_ctr) = S;
-
-        SaveBpodSessionData;
-
-    end
-    
-    %--- This final block of code is necessary for the Bpod console's pause and stop buttons to work
-    HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
-    if BpodSystem.Status.BeingUsed == 0
-        return
-    end
-end
-
-fprintf('SinglePulse1 finished\n');
 toc;
 
 pause(10);
@@ -406,6 +375,13 @@ for currentTrial = 1:S.NumStimTrials1
         currentTrial,TrialType,ITIDuration);
     
     
+    %%%%%%%%%
+    y = S.stimFunctions{TrialType};
+    [pulse_times, pulse_times_vector] = simulate_pulse_times(y);
+    W.loadWaveform(TrialType, pulse_times);
+    S.waveformTimeVec1{currentTrial} = pulse_times_vector;
+    %%%%%%%%%
+
     % Create state matrix
     sma = NewStateMatrix();
     sma = AddState(sma, 'Name', 'Foreperiod',...
@@ -422,6 +398,13 @@ for currentTrial = 1:S.NumStimTrials1
         'Timer', ITIDuration,...
         'StateChangeConditions', {'Tup', 'exit'},...
         'OutputActions', {'BNC1', 0, 'BNC2', 0});
+    sma = AddState(sma, 'Name', 'Optotag', ... 
+        'Timer', OptotagStateDuration,...
+        'StateChangeConditions', {'Tup', 'ITI'},...
+        'OutputActions', {'WavePlayer1', S.NumPatterns+1, 'BNC1', 0, 'BNC2', 0}); 
+
+    % Add reward state so pokes plot doesn't get messed up:
+    sma = AddState(sma,'Name','Reward','Timer',0,'StateChangeConditions',{},'OutputActions',{}); 
     
     % Send state machine to Bpod device
     SendStateMatrix(sma);
@@ -432,6 +415,7 @@ for currentTrial = 1:S.NumStimTrials1
     if ~isempty(fieldnames(RawEvents))
         % Save trial data
         BpodSystem.Data = AddTrialEvents(BpodSystem.Data, RawEvents);
+        % BpodSystem.Data.VaryingWaveforms1{currentTrial} = pulse_times_vector;
         BpodSystem.Data.TrialSettings(total_trial_ctr) = S;
         BpodSystem.Data.TrialTypes1(currentTrial) = TrialType;
         SaveBpodSessionData;
@@ -489,6 +473,15 @@ for currentTrial = 1:S.NumRewardTrials2
         'Timer', ITIDuration,...
         'StateChangeConditions', {'Tup','exit'},...
         'OutputActions', {'BNC1',0,'BNC2',0});
+    sma = AddState(sma, 'Name', 'Optotag', ... 
+        'Timer', OptotagStateDuration,...
+        'StateChangeConditions', {'Tup', 'ITI'},...
+        'OutputActions', {'WavePlayer1', S.NumPatterns+1, 'BNC1', 0, 'BNC2', 0}); 
+
+    % Add the odor states so that pokes plot doesn't get messed up:
+    for tt = 1:S.NumPatterns
+        sma = AddState(sma, 'Name', sprintf('Stim%d',tt),'Timer', 0,'StateChangeConditions',{},'OutputActions', {}); 
+    end
     
     SendStateMatrix(sma); % Send state machine to the Bpod state machine device
 
@@ -514,61 +507,6 @@ for currentTrial = 1:S.NumRewardTrials2
 end
 
 fprintf('Rewards2 finished\n');
-toc;
-
-pause(10);
-
-
-%% SinglePulse2
-tic
-fprintf('\nSinglePulse2 (%d trials)\n', S.NumSinglePulseTrials2);
-for currentTrial = 1:S.NumSinglePulseTrials2
-    
-    total_trial_ctr = total_trial_ctr+1;
-
-    % Calculate ITI for this trial
-    ITIDuration = unifrnd(S.ITIMin_single_pulse,S.ITIMax_single_pulse);
-
-    fprintf('\tTrial %d:\tITI=%0.1fs\n',currentTrial,ITIDuration);
-
-    %--- Assemble state machine
-    sma = NewStateMatrix();
-    
-    sma = AddState(sma,'Name','Foreperiod',...
-        'Timer',S.ForeperiodDuration,...
-        'StateChangeConditions',{'Tup','SinglePulse'},...
-        'OutputActions',{'BNC1',1,'BNC2',1});
-    sma = AddState(sma, 'Name', 'SinglePulse', ... 
-        'Timer', SinglePulseStateDuration,...
-        'StateChangeConditions', {'Tup', 'ITI'},...
-        'OutputActions', {'WavePlayer1', S.NumPatterns+2, 'BNC1', 0, 'BNC2', 0}); 
-    sma = AddState(sma, 'Name', 'ITI', ... 
-        'Timer', ITIDuration,...
-        'StateChangeConditions', {'Tup','exit'},...
-        'OutputActions', {'BNC1',0,'BNC2',0});
-    
-    SendStateMatrix(sma); % Send state machine to the Bpod state machine device
-
-    RawEvents = RunStateMatrix; % Run the trial and return events
-
-    % Update online plots
-    if ~isempty(fieldnames(RawEvents))
-        
-        BpodSystem.Data = AddTrialEvents(BpodSystem.Data, RawEvents);
-        BpodSystem.Data.TrialSettings(total_trial_ctr) = S;
-
-        SaveBpodSessionData;
-
-    end
-    
-    %--- This final block of code is necessary for the Bpod console's pause and stop buttons to work
-    HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
-    if BpodSystem.Status.BeingUsed == 0
-        return
-    end
-end
-
-fprintf('SinglePulse2 finished\n');
 toc;
 
 pause(10);
@@ -601,6 +539,13 @@ for currentTrial = 1:S.NumStimTrials2
         currentTrial,TrialType,ITIDuration);
     
     
+    %%%%%%%%%
+    y = S.stimFunctions{TrialType};
+    [pulse_times, pulse_times_vector] = simulate_pulse_times(y);
+    W.loadWaveform(TrialType, pulse_times);
+    S.waveformTimeVec2{currentTrial} = pulse_times_vector;
+    %%%%%%%%%
+    
     % Create state matrix
     sma = NewStateMatrix();
     sma = AddState(sma, 'Name', 'Foreperiod',...
@@ -617,6 +562,13 @@ for currentTrial = 1:S.NumStimTrials2
         'Timer', ITIDuration,...
         'StateChangeConditions', {'Tup', 'exit'},...
         'OutputActions', {'BNC1', 0, 'BNC2', 0});
+    sma = AddState(sma, 'Name', 'Optotag', ... 
+        'Timer', OptotagStateDuration,...
+        'StateChangeConditions', {'Tup', 'ITI'},...
+        'OutputActions', {'WavePlayer1', S.NumPatterns+1, 'BNC1', 0, 'BNC2', 0}); 
+
+    % Add reward state so pokes plot doesn't get messed up:
+    sma = AddState(sma,'Name','Reward','Timer',0,'StateChangeConditions',{},'OutputActions',{}); 
     
     % Send state machine to Bpod device
     SendStateMatrix(sma);
@@ -627,6 +579,7 @@ for currentTrial = 1:S.NumStimTrials2
     if ~isempty(fieldnames(RawEvents))
         % Save trial data
         BpodSystem.Data = AddTrialEvents(BpodSystem.Data, RawEvents);
+        % BpodSystem.Data.VaryingWaveforms2{currentTrial} = pulse_times_vector;
         BpodSystem.Data.TrialSettings(total_trial_ctr) = S;
         BpodSystem.Data.TrialTypes2(currentTrial) = TrialType;
         SaveBpodSessionData;
@@ -684,6 +637,15 @@ for currentTrial = 1:S.NumRewardTrials3
         'Timer', ITIDuration,...
         'StateChangeConditions', {'Tup','exit'},...
         'OutputActions', {'BNC1',0,'BNC2',0});
+    sma = AddState(sma, 'Name', 'Optotag', ... 
+        'Timer', OptotagStateDuration,...
+        'StateChangeConditions', {'Tup', 'ITI'},...
+        'OutputActions', {'WavePlayer1', S.NumPatterns+1, 'BNC1', 0, 'BNC2', 0}); 
+
+    % Add the odor states so that pokes plot doesn't get messed up:
+    for tt = 1:S.NumPatterns
+        sma = AddState(sma, 'Name', sprintf('Stim%d',tt),'Timer', 0,'StateChangeConditions',{},'OutputActions', {}); 
+    end
     
     SendStateMatrix(sma); % Send state machine to the Bpod state machine device
 
@@ -741,6 +703,11 @@ for currentTrial = 1:S.NumOptotagTrials2
         'Timer', ITIDuration,...
         'StateChangeConditions', {'Tup','exit'},...
         'OutputActions', {'BNC1',0,'BNC2',0});
+
+    % Add the odor states so that pokes plot doesn't get messed up:
+    for tt = 1:S.NumPatterns
+        sma = AddState(sma, 'Name', sprintf('Stim%d',tt),'Timer', 0,'StateChangeConditions',{},'OutputActions', {}); 
+    end
     
     SendStateMatrix(sma); % Send state machine to the Bpod state machine device
 
@@ -772,4 +739,46 @@ clear W;
 
 fprintf('\nProtocol finished\n')
 
+end
+
+
+
+
+function [pulse_times, pulse_times_vector] = simulate_pulse_times(y, target_time, window)
+
+    if nargin < 2
+        target_time = 2;
+        window = 100;
+    end
+
+    num_windows = floor(numel(y) / window);
+    
+    % compute mean rate per window (rate is in spikes per 10 ms)
+    lambdas = zeros(num_windows,1);
+    for k = 1:num_windows
+        idx = (k-1)*window + (1:window);
+        lambdas(k) = mean(y(idx));
+    end
+
+    % prepare output at 10 kHz
+    SR = 10000;  % samples per second
+    PulseDur = 0.005;
+    total_samples = round(target_time * SR);
+    pulse_times = zeros(1, total_samples);
+    pulse_times_vector = []; % save this only 
+
+    % simulate
+    for k = 1:num_windows
+        rate = lambdas(k);
+        lam_window = rate * window;  % expected spikes in this window
+        adjustment = 3000;
+        n_spikes = poissrnd(lam_window / adjustment); % divide by 3000 to match the spike rate in averaged function
+        if n_spikes > 1
+            startIdx = (k-1)*window + 1;
+            lenBlock = round(PulseDur * SR);
+            endIdx   = min(startIdx + lenBlock - 1, total_samples);
+            pulse_times(startIdx:endIdx) = 5; % 5V
+            pulse_times_vector(end+1) = startIdx;
+        end
+    end
 end

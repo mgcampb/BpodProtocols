@@ -1,4 +1,4 @@
-function StimPatterns_FreeWater_3Patterns_SinglePulse_Optotag
+function StimPatterns_FreeWater_SineWave_SinglePulse_Optotag
 
 % M. Campbell 8/2/2021: Protocol to deliver odors followed by laser pulses.
 % M. Campbell 12/1/2021: Edited OdorLaser to create OdorLaserWater task.
@@ -21,7 +21,7 @@ function StimPatterns_FreeWater_3Patterns_SinglePulse_Optotag
 % C. Chen and M. Campbell 5/27/2025: Changed patterns 1,2,5,6 to a single
 %   pulse
 
-global BpodSystem
+global BpodSystem 
 
 
 COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignored by git)
@@ -38,16 +38,16 @@ S = BpodSystem.ProtocolSettings;
 % These parameters are shared across animals:
 S.Experimenter = 'Malcolm';
 S.Mouse = mouse;
-S.NumPatterns = 3;
+S.NumPatterns = 4;
 
 % Num trials
-S.NumOptotagTrials1 = 60;
-S.NumRewardTrials1 = 2*6;
-S.NumSinglePulseTrials1 = 100;
-S.NumStimTrials1 = S.NumPatterns*20;
+S.NumOptotagTrials1 = 0; %60;
+S.NumRewardTrials1 = 0; % 2*6;
+S.NumSinglePulseTrials1 = 0; %100;
+S.NumStimTrials1 = S.NumPatterns*15;
 S.NumRewardTrials2 = 2*6;
 S.NumSinglePulseTrials2 = 100;
-S.NumStimTrials2 = S.NumPatterns*20;
+S.NumStimTrials2 = S.NumPatterns*15;
 S.NumRewardTrials3 = 2*6;
 S.NumOptotagTrials2 = 60;
 
@@ -162,6 +162,8 @@ for i = 1:24
     waveform_rampUp = [waveform_rampUp 5*ones(1,numOnes) zeros(1,numZeros)];
     freq = freq*1.135; 
 end
+figure;
+plot(waveform_rampUp);
 W.loadWaveform(1,waveform_rampUp);
 
 % 2) 2 sec ramping down
@@ -169,20 +171,27 @@ waveform_rampDown = fliplr(waveform_rampUp);
 waveform_rampDown = [waveform_rampDown(87:end) zeros(1,86)]; % align to zero
 W.loadWaveform(2,waveform_rampDown);
 
-% 3) 3 sec at 20 Hz
-waveform_3secSquare_20Hz = zeros(1,round(SR/20));
-waveform_3secSquare_20Hz(1:(S.PulseDur * SR)) = 5;
-waveform_3secSquare_20Hz = repmat(waveform_3secSquare_20Hz,1,60);
-W.loadWaveform(3,waveform_3secSquare_20Hz);
+% 2) 4 sec sine wave pulse at 0.25 Hz
+waveform_sine_pulse_025Hz = SinePulse(0.25, 4);
+W.loadWaveform(2,waveform_sine_pulse_025Hz);
 
-% 4) Optotag message (one 20 ms pulse)
+% 3) 4 sec sine wave pulse at 0.5 Hz
+waveform_sine_pulse_05Hz = SinePulse(0.5, 4);
+W.loadWaveform(3,waveform_sine_pulse_05Hz);
+
+
+% 4) 4 sec sine wave pulse at 1 Hz
+waveform_sine_pulse_1Hz = SinePulse(1, 4);
+W.loadWaveform(4,waveform_sine_pulse_1Hz);
+
+% 5) Optotag message (one 20 ms pulse)
 waveform_optotag = zeros(1,round(SR/S.OptotagPulseFreq));
 waveform_optotag(1:(S.OptotagPulseDur * SR)) = 5;
 waveform_optotag = repmat(waveform_optotag,1,S.OptotagPulseNum);
 W.loadWaveform(S.NumPatterns+1,waveform_optotag);
 
-% 5) Single pulse
-waveform_single_pulse = zeros(1,round(SR/20));
+% 6) Single pulse
+waveform_single_puslse = zeros(1,round(SR/20));
 waveform_single_pulse(1:(S.PulseDur * SR)) = 5;
 W.loadWaveform(S.NumPatterns+2,waveform_single_pulse);
 
@@ -199,7 +208,7 @@ LoadSerialMessages('WavePlayer1', WavePlayerMessages);
 
 % save waveforms to bpod output structure S (task parameters):
 S.stimWaveforms = {};
-S.stimWaveforms = {waveform_rampUp,waveform_rampDown,waveform_3secSquare_20Hz};
+S.stimWaveforms = {waveform_rampUp, waveform_sine_pulse_025Hz, waveform_sine_pulse_05Hz, waveform_sine_pulse_1Hz};
 
 
 %% Optotag1
@@ -325,7 +334,6 @@ pause(10);
 
 
 %% SinglePulse1
-tic
 fprintf('\nSinglePulse1 (%d trials)\n', S.NumSinglePulseTrials1);
 for currentTrial = 1:S.NumSinglePulseTrials1
     
@@ -520,7 +528,6 @@ pause(10);
 
 
 %% SinglePulse2
-tic
 fprintf('\nSinglePulse2 (%d trials)\n', S.NumSinglePulseTrials2);
 for currentTrial = 1:S.NumSinglePulseTrials2
     
@@ -772,4 +779,43 @@ clear W;
 
 fprintf('\nProtocol finished\n')
 
+end
+
+
+
+function waveform_sine_pulse = SinePulse(freq, target_end_time)
+% freq = 0.5 Hz, target_end_time = 3 sec
+
+SR = 10000; % sampling rate 
+PulseDur = 0.005;
+IPI_min = 0.04;  
+IPI_max = 0.1; 
+
+IPI_func = @(t, freq, A, off)(-A*sin(2*pi*freq*t)) + off;
+% value_func = @(t, freq, A, off)(A*sin(2*pi*freq*t)) + off;
+% derivative_func = @(t, freq, A, off)(2*pi*freq*cos(2*pi*freq*t));
+% td_func = @(t, freq, A)(derivative_func(t, freq, A) + value_func(t, freq, A, off)*log(r));
+
+waveform_sine_pulse = zeros(round(target_end_time*SR), 1);
+t_curr = 0.0;
+pulse_count = 0;
+
+while t_curr < target_end_time
+    amp = IPI_func(t_curr, freq, 20, 20);
+    ipi = IPI_min + (amp / 20) * (IPI_max - IPI_min) ;
+
+    t_next = t_curr + ipi;
+    startIdx =  floor(t_curr * SR) + 1;
+    endIdx = floor((t_curr+PulseDur) * SR);
+
+    if endIdx > numel(waveform_sine_pulse)
+        endIdx = numel(waveform_sine_pulse);
+    end
+    waveform_sine_pulse(startIdx:endIdx) = 5;
+    t_curr = t_next;
+    pulse_count = pulse_count + 1;
+end
+fprintf('\npulse count %d at %.1f frequency\n', pulse_count, freq)
+figure;
+plot(waveform_sine_pulse);
 end
