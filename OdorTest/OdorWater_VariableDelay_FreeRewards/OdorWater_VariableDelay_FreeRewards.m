@@ -126,7 +126,6 @@ state_colors = struct( ...
     'ITI',              [0.92 0.92 0.92]);     % gray
 
 OdorWaterTrialVisualizer('init', state_colors);
-% PokesPlotLicksSlow('init', state_colors, []);
 
 %% Set odors for each trial type in each mouse
 % S.OdorValvesOrder is the order of odors for this mouse, 
@@ -161,9 +160,11 @@ for currentTrial = 1:NumTrials
     
     % Display trial type
     if TrialType==0
+        % TimeElapsed = RewardValveTime + ITIDuration;
         fprintf('\tTrial %d: TrialType=%d Free TotalReward=%d ITI=%0.1fs\n',...
             currentTrial,TrialType,AccumulatedReward,ITIDuration);
     else
+        % TimeElapsed = S.TrialStartSignal + S.OdorDelay + S.OdorDuration + S.RewardDelay(TrialType) + RewardValveTime + ITIDuration;
         fprintf('\tTrial %d: TrialType=%d Odor=%d TotalReward=%d ITI=%0.1fs\n',...
             currentTrial,TrialType,S.OdorValvesOrder(TrialType),AccumulatedReward,ITIDuration);
     end
@@ -180,12 +181,14 @@ for currentTrial = 1:NumTrials
         sma = AddState(sma, 'Name', 'TrialStartSignal',...
             'Timer', S.TrialStartSignal,...
             'StateChangeConditions', {'Tup', 'OdorDelay'},...
-            'OutputActions', {'BNC1', 1,'BNC2', 0});
+            'OutputActions', {'BNC1', 1, ... & sync pulse
+            'BNC2', 1 ... % odor trial - LED
+            });
         sma = AddState(sma, 'Name', 'OdorDelay',...
             'Timer', S.OdorDelay,...
             'StateChangeConditions', {'Tup', CS_state},...
                 'OutputActions', {'BNC1', 0, 'BNC2', 0}); 
-        for tt = 1:S.NumOdors % plotting purpose
+        for tt = 1:S.NumOdors % for plotting purpose?
             sma = AddState(sma, 'Name', sprintf('CS%d',tt),...
                 'Timer', S.OdorDuration,...
                 'StateChangeConditions', {'Tup', 'RewardDelay'},...
@@ -228,7 +231,6 @@ for currentTrial = 1:NumTrials
         
         % Update online plots
         OdorWaterTrialVisualizer('update', state_colors);
-        % PokesPlotLicksSlow('update');
     end
 
     % Handle pauses and exit if the user ended the session
