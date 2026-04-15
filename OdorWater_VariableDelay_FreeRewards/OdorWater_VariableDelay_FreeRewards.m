@@ -143,8 +143,14 @@ SR = 10000; % Sampling rate for analog output
 W.SamplingRate = SR;
 W.OutputRange = '0V:5V'; 
 LED_waveform = [ones(1, SR*S.TrialStartSignal) * 5, zeros(1, SR*0.01)]; % 5V for TrialStartSignal duration, then 0V briefly
+<<<<<<< Updated upstream
 W.loadWaveform(1,LED_waveform);
 WavePlayerMessages = {['P' 8 0]}; % Serial message to play waveform 1 from channel 4
+=======
+W.loadWaveform(1, LED_waveform); % Add waveform to channel 3, index 1
+channel = 3;
+WavePlayerMessages = {['P' 2^(channel-1) 0]}; % Serial message to play first waveform from channel 4
+>>>>>>> Stashed changes
 LoadSerialMessages('WavePlayer1', WavePlayerMessages);
 
 %% Odor trials
@@ -189,7 +195,11 @@ for currentTrial = 1:NumTrials
         sma = AddState(sma, 'Name', 'TrialStartSignal',...
             'Timer', S.TrialStartSignal,...
             'StateChangeConditions', {'Tup', 'OdorDelay'},...
+<<<<<<< Updated upstream
             'OutputActions', {'WavePlayer1', 1, 'BNC1', 1}); % turn on LED, channel 4, first waveform
+=======
+            'OutputActions', {'WavePlayer1', 1, 'BNC1', 1}); % turn on LED, channel 3, first waveform
+>>>>>>> Stashed changes
         sma = AddState(sma, 'Name', 'OdorDelay',...
             'Timer', S.OdorDelay,...
             'StateChangeConditions', {'Tup', CS_state},...

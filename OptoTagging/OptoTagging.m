@@ -22,9 +22,9 @@ S.ForeperiodDuration = 0.5; % seconds
 % S.LaserPulseDuration = 0.02; % seconds
 % S.LaserPulseFrequency = 20; % Hz
 
-S.NumLaserPulse = 10; % number of laser pulses to deliver after trace period
+S.NumLaserPulse = 20; % number of laser pulses to deliver after trace period
 S.LaserPulseDuration = 0.02; % seconds
-S.LaserPulseFrequency = 20; % Hz
+S.LaserPulseFrequency = 40; % Hz
 
 S.GUI.ITIMin = 5; % seconds
 S.GUI.ITIMax = 10; % seconds

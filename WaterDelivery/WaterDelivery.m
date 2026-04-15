@@ -110,6 +110,7 @@ for currentTrial = 1:MaxTrials
         BpodSystem.Data.TrialSettings(currentTrial) = S;
        
         PokesPlotLicksSlow('update');
+        SaveBpodSessionData;
     end
 
     

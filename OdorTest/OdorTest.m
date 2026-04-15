@@ -6,15 +6,24 @@ global BpodSystem
 
 %% Setup (runs once before the first trial)
 
+<<<<<<< Updated upstream
 MaxTrials = 40; % Max number of trials
+=======
+MaxTrials = 80; % Max number of trials
+>>>>>>> Stashed changes
 % MaxTrials = 20; % Max number of trials
+%% 
 % MaxTrials = 5; % Max number of trials
 
 % Task parameters
 S = BpodSystem.ProtocolSettings; % contains valve order for this mouse in field OdorValvesOdor
 
 % S.NumOdors = 2;
+<<<<<<< Updated upstream
 S.NumOdors = 4;
+=======
+S.NumOdors = 8;
+>>>>>>> Stashed changes
 S.OdorValvesOrder = 1:S.NumOdors;
 
 % These parameters are shared across animals:
@@ -30,6 +39,7 @@ BpodParameterGUI('init', S);
 
 % Define trial types: 1 = Odor1, 2 = Odor2, etc
 TrialTypes = repmat(1:S.NumOdors,1,MaxTrials/S.NumOdors);
+% TrialTypes = repmat([1, 5, 6, 7], 1, MaxTrials/S.NumOdors);
 % TrialTypes = repmat(S.NumOdors,1,MaxTrials);
 
 % Pokes plot

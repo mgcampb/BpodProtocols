@@ -27,7 +27,6 @@ COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignor
 %% Setup (runs once before the first trial)
 
 mouse = BpodSystem.Status.CurrentSubjectName;
-
 BpodSystem.Data.TaskDescription = 'Optotag1 Rewards1 StimTrials1 Rewards2 StimTrials2 Rewards3 Optotag2';
 
 % Task parameters
@@ -251,7 +250,6 @@ for currentTrial = 1:S.NumOptotagTrials1
 
     % Update online plots
     if ~isempty(fieldnames(RawEvents))
-        
         BpodSystem.Data = AddTrialEvents(BpodSystem.Data, RawEvents);
         BpodSystem.Data.TrialSettings(total_trial_ctr) = S;
 
