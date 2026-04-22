@@ -1,4 +1,4 @@
-function StimPatterns_FreeWater
+function SineWaveStimPatterns_FreeWater
 
 % M. Campbell 8/2/2021: Protocol to deliver odors followed by laser pulses.
 % M. Campbell 12/1/2021: Edited OdorLaser to create OdorLaserWater task.
@@ -29,7 +29,7 @@ NumRewardTrials1 = 20;
 NumStimTrials = 90; % Number of stim trials
 NumRewardTrials2 = 20;
 
-BpodSystem.Data.TaskDescription s= 'Rewards1 StimTrials Rewards2';
+BpodSystem.Data.TaskDescription = 'Rewards1 StimTrials Rewards2';
 
 % Task parameters
 S = BpodSystem.ProtocolSettings; 
@@ -120,6 +120,7 @@ W.OutputRange = '0V:5V';
 % Four stim patterns: 
 WavePlayerMessages = {};
 
+% hfig = figure;
 % 1) 1 cycle of sine wave
 waveform_sine_pulse_025Hz = SinePulse(0.25, 4);
 W.loadWaveform(1, waveform_sine_pulse_025Hz);
@@ -139,7 +140,6 @@ LoadSerialMessages('WavePlayer1', WavePlayerMessages);
 
 % save waveforms:
 S.stimWaveforms = {waveform_sine_pulse_025Hz,waveform_sine_pulse_05Hz,waveform_sine_pulse_075Hz,};
-
 
 %% Rewards1
 tic
@@ -360,6 +360,7 @@ clear W;
 fprintf('\nProtocol finished\n')
 
 end
+
 
 
 function waveform_sine_pulse = SinePulse(freq, target_end_time)
