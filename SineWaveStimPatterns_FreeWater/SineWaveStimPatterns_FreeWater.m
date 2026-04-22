@@ -1,4 +1,4 @@
-function StimPatterns_FreeWater
+function SineWaveStimPatterns_FreeWater
 
 % M. Campbell 8/2/2021: Protocol to deliver odors followed by laser pulses.
 % M. Campbell 12/1/2021: Edited OdorLaser to create OdorLaserWater task.
@@ -26,7 +26,7 @@ COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignor
 mouse = BpodSystem.Status.CurrentSubjectName;
 
 NumRewardTrials1 = 20;
-NumStimTrials = 160; % Number of stim trials
+NumStimTrials = 90; % Number of stim trials
 NumRewardTrials2 = 20;
 
 BpodSystem.Data.TaskDescription = 'Rewards1 StimTrials Rewards2';
@@ -37,7 +37,7 @@ S = BpodSystem.ProtocolSettings;
 % These parameters are shared across animals:
 S.Experimenter = 'Malcolm';
 S.Mouse = mouse;
-S.NumPatterns = 4;
+S.NumPatterns = 3;
 
 S.ITIMean = 12;
 S.ITIMin = 8;
@@ -46,7 +46,7 @@ S.RewardAmounts = [2 8];
 S.ForeperiodDuration = 0.5;
 
 S.StimPower_mW = input('Stim LED power (mW): ');
-S.PulseDur = 0.002;
+S.PulseDur = 0.001;
 
 % display parameters
 fprintf('\nSession parameters:\n')
@@ -74,8 +74,8 @@ for i = 1:nBlocks
 end
 
 % Rewards2:
-RewardAmounts2 = nan(NumRewardTrials1, 1);
-nBlocks = NumRewardTrials1/blockSize;
+RewardAmounts2 = nan(NumRewardTrials2, 1);
+nBlocks = NumRewardTrials2/blockSize;
 counter = 1;
 for i = 1:nBlocks
     RewardAmount = repmat(S.RewardAmounts,1,rewardsPerBlock);
@@ -121,57 +121,25 @@ W.OutputRange = '0V:5V';
 WavePlayerMessages = {};
 
 % hfig = figure;
-
-% 1) 1 sec at 20 Hz
-waveform_1secSquare = zeros(1,round(SR/20));
-waveform_1secSquare(1:(S.PulseDur * SR)) = 5;
-waveform_1secSquare = repmat(waveform_1secSquare,1,20);
-W.loadWaveform(1,waveform_1secSquare);
+% 1) 1 cycle of sine wave
+waveform_sine_pulse_025Hz = SinePulse(0.25, 4);
+W.loadWaveform(1, waveform_sine_pulse_025Hz);
 WavePlayerMessages = [WavePlayerMessages {['P' 1 0]}];
-% subplot(4,1,1); plot((0:(numel(waveform_1secSquare)-1))/SR,waveform_1secSquare); xlim([0 2]); xlabel('sec'); ylabel('V'); title('Pattern 1');
 
-% 2) 2 sec at 20 Hz
-waveform_2secSquare = zeros(1,round(SR/20));
-waveform_2secSquare(1:(S.PulseDur * SR)) = 5;
-waveform_2secSquare = repmat(waveform_2secSquare,1,40);
-W.loadWaveform(2,waveform_2secSquare);
+% 2) 2 cycles of sine wave
+waveform_sine_pulse_05Hz = SinePulse(0.5, 4);
+W.loadWaveform(2, waveform_sine_pulse_05Hz);
 WavePlayerMessages = [WavePlayerMessages {['P' 1 1]}];
-% subplot(4,1,2); plot((0:(numel(waveform_2secSquare)-1))/SR,waveform_2secSquare); xlim([0 2]); xlabel('sec'); ylabel('V'); title('Pattern 2');
 
-% 3) 2 sec ramping up
-waveform_rampUp = [];
-freq = 4;
-for i = 1:24
-    numOnes = S.PulseDur*SR;
-    numZeros = round(SR/freq)-numOnes;
-    waveform_rampUp = [waveform_rampUp 5*ones(1,numOnes) zeros(1,numZeros)];
-    freq = freq*1.135; 
-end
-W.loadWaveform(3,waveform_rampUp);
+% 3) 3 cycles of sine wave
+waveform_sine_pulse_075Hz = SinePulse(0.75, 4);
+W.loadWaveform(3, waveform_sine_pulse_075Hz);
 WavePlayerMessages = [WavePlayerMessages {['P' 1 2]}];
-% subplot(4,1,3); plot((0:(numel(waveform_rampUp)-1))/SR,waveform_rampUp); xlim([0 2]); xlabel('sec'); ylabel('V'); title('Pattern 3');
-
-% 4) 2 sec ramping down
-waveform_rampDown = fliplr(waveform_rampUp);
-waveform_rampDown = [waveform_rampDown(87:end) zeros(1,86)]; % align to zero
-% % old ramp down:
-% waveform_rampDown = [];
-% freq = 4*1.135^23;
-% for i = 1:24
-%     numOnes = 0.005*SR;
-%     numZeros = round(SR/freq)-numOnes;
-%     waveform_rampDown = [waveform_rampDown 5*ones(1,numOnes) zeros(1,numZeros)];
-%     freq = freq/1.135; 
-% end
-W.loadWaveform(4,waveform_rampDown);
-WavePlayerMessages = [WavePlayerMessages {['P' 1 3]}];
-% subplot(4,1,4); plot((0:(numel(waveform_rampDown)-1))/SR,waveform_rampDown); xlim([0 2]); xlabel('sec'); ylabel('V'); title('Pattern 4');
 
 LoadSerialMessages('WavePlayer1', WavePlayerMessages);
 
 % save waveforms:
-S.stimWaveforms = {waveform_1secSquare,waveform_2secSquare,waveform_rampUp,waveform_rampDown};
-
+S.stimWaveforms = {waveform_sine_pulse_025Hz,waveform_sine_pulse_05Hz,waveform_sine_pulse_075Hz,};
 
 %% Rewards1
 tic
@@ -392,3 +360,40 @@ clear W;
 fprintf('\nProtocol finished\n')
 
 end
+
+
+
+function waveform_sine_pulse = SinePulse(freq, target_end_time)
+% freq = 0.5 Hz, target_end_time = 3 sec
+
+SR = 10000; % sampling rate 
+PulseDur = 0.005;
+IPI_min = 0.04;  
+IPI_max = 0.1; 
+
+IPI_func = @(t, freq, A, off)(-A*sin(2*pi*freq*t)) + off;
+% value_func = @(t, freq, A, off)(A*sin(2*pi*freq*t)) + off;
+% derivative_func = @(t, freq, A, off)(2*pi*freq*cos(2*pi*freq*t));
+% td_func = @(t, freq, A)(derivative_func(t, freq, A) + value_func(t, freq, A, off)*log(r));
+
+waveform_sine_pulse = zeros(round(target_end_time*SR), 1);
+t_curr = 0.0;
+pulse_count = 0;
+
+while t_curr < target_end_time
+    amp = IPI_func(t_curr, freq, 20, 20);
+    ipi = IPI_min + (amp / 20) * (IPI_max - IPI_min) ;
+
+    t_next = t_curr + ipi;
+    startIdx =  floor(t_curr * SR) + 1;
+    endIdx = floor((t_curr+PulseDur) * SR);
+
+    if endIdx > numel(waveform_sine_pulse)
+        endIdx = numel(waveform_sine_pulse);
+    end
+    waveform_sine_pulse(startIdx:endIdx) = 5;
+    t_curr = t_next;
+    pulse_count = pulse_count + 1;
+end
+disp(pulse_count)
+end 
