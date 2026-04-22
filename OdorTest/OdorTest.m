@@ -6,11 +6,7 @@ global BpodSystem
 
 %% Setup (runs once before the first trial)
 
-<<<<<<< Updated upstream
 MaxTrials = 40; % Max number of trials
-=======
-MaxTrials = 80; % Max number of trials
->>>>>>> Stashed changes
 % MaxTrials = 20; % Max number of trials
 %% 
 % MaxTrials = 5; % Max number of trials
@@ -19,11 +15,7 @@ MaxTrials = 80; % Max number of trials
 S = BpodSystem.ProtocolSettings; % contains valve order for this mouse in field OdorValvesOdor
 
 % S.NumOdors = 2;
-<<<<<<< Updated upstream
 S.NumOdors = 4;
-=======
-S.NumOdors = 8;
->>>>>>> Stashed changes
 S.OdorValvesOrder = 1:S.NumOdors;
 
 % These parameters are shared across animals:
