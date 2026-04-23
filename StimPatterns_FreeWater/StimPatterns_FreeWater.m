@@ -46,7 +46,7 @@ S.RewardAmounts = [2 8];
 S.ForeperiodDuration = 0.5;
 
 S.StimPower_mW = input('Stim LED power (mW): ');
-S.PulseDur = 0.001;
+S.PulseDur = 0.005;
 
 % display parameters
 fprintf('\nSession parameters:\n')
