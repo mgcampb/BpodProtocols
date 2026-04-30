@@ -29,9 +29,9 @@ COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignor
 
 mouse = BpodSystem.Status.CurrentSubjectName;
 
-NumRewardTrials1 = 0; % 2*8;
-NumStimTrials = 5 * 2; % * 5*25;
-NumRewardTrials2 = 0; % 2*8;
+NumRewardTrials1 = 2*8;
+NumStimTrials = 5*25;
+NumRewardTrials2 = 2*8;
 
 BpodSystem.Data.TaskDescription = 'Rewards1 StimTrials Rewards2';
 
