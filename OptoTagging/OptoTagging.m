@@ -22,12 +22,12 @@ S.ForeperiodDuration = 0.5; % seconds
 % S.LaserPulseDuration = 0.02; % seconds
 % S.LaserPulseFrequency = 20; % Hz
 
-S.NumLaserPulse = 10; % number of laser pulses to deliver after trace period
-S.LaserPulseDuration = 0.02; % seconds
-S.LaserPulseFrequency = 20; % Hz
+S.NumLaserPulse = 1; % number of laser pulses to deliver after trace period
+S.LaserPulseDuration = 3; % seconds
+S.LaserPulseFrequency = 0.2; % Hz
 
-S.GUI.ITIMin = 5; % seconds
-S.GUI.ITIMax = 10; % seconds
+S.GUI.ITIMin = 20; % 5; % seconds
+S.GUI.ITIMax = 30; % 10; % seconds
 
 % Duration of Laser state (based on parameters in S)
 LaserStateDuration = ceil(S.NumLaserPulse/S.LaserPulseFrequency); % seconds
