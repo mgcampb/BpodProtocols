@@ -1,4 +1,4 @@
-function OdorLaser_FreeWater_v2
+function OdorLaser_FreeWater
 
 % M. Campbell 8/2/2021: Protocol to deliver odors followed by laser pulses.
 % M. Campbell 12/1/2021: Edited OdorLaser to create OdorLaserWater task.
@@ -12,8 +12,6 @@ function OdorLaser_FreeWater_v2
 % M. Campbell 11/5/2022: Added unpredicted opto stim before and after odor
 %   trials
 % M. Campbell 3/5/2023: 1 laser, 2 CS
-% Carol 5/3/2026: 100% stimulation probability; 1sec odor delivery overlaps
-% with 0.5sec stimulation 
 
 global BpodSystem
 
@@ -71,7 +69,7 @@ S.Experimenter = 'Malcolm';
 S.Mouse = mouse;
 S.ForeperiodDuration = 0.5; % seconds
 S.OdorDuration = 1; % seconds
-S.StimProbability = 1; % probability of receiving opto stim on laser trials
+S.StimProbability = 0.75; % probability of receiving opto stim on laser trials
 
 S.ITIMean = 12;
 S.ITIMin = 8;
@@ -178,9 +176,6 @@ for i = 1:S.NumLaser
     waveform = zeros(1,round(SR/S.LaserPulseFrequency(i)));
     waveform(1:(S.LaserPulseDuration(i) * SR)) = 5;
     waveform = repmat(waveform,1,S.NumLaserPulse(i));
-    % add blank waveform to match odor duraiton
-    offset = S.OdorDuration - OptoStimDuration;
-    waveform = [zeros(1, offset*SR), waveform]; 
     W.loadWaveform(i,waveform);
 end
 WavePlayerMessages = {};
@@ -273,11 +268,11 @@ for currentTrial = 1:NumOdorTrials
     % Compute variables for this trial's state machine:
     
     CS_state = sprintf('CS%d',TrialType);
-    % if StimTrial==1
-    %     OutcomeState = 'Laser';
-    % else
-    %     OutcomeState = 'ITI';
-    % end
+    if StimTrial==1
+        OutcomeState = 'Laser';
+    else
+        OutcomeState = 'ITI';
+    end
 
     % Serial message to open/close odor valves
     ValveMessage = TrialType+1;
@@ -292,9 +287,9 @@ for currentTrial = 1:NumOdorTrials
     end
     
     % So that ITI is the same for Stim and NoStim trials:
-    % if strcmp(OutcomeState,'ITI')
-    %     ITIDuration = ITIDuration+OptoStimDuration;
-    % end
+    if strcmp(OutcomeState,'ITI')
+        ITIDuration = ITIDuration+OptoStimDuration;
+    end
     
     % Display trial type
     if LaserMessage > S.NumLaser
@@ -318,15 +313,23 @@ for currentTrial = 1:NumOdorTrials
     for tt = 1:S.NumOdors
         sma = AddState(sma, 'Name', sprintf('CS%d',tt),...
             'Timer', S.OdorDuration,...
-            'StateChangeConditions', {'Tup', 'ITI'},...
+            'StateChangeConditions', {'Tup', 'Trace'},...
             'OutputActions', {'ValveModule1', ValveMessage,... % closes the blank valve, opens the odor valve
-            'WavePlayer1', LaserMessage, ...
                 'BNC1', 1, 'BNC2', 1}); 
     end
+    sma = AddState(sma, 'Name', 'Trace',...
+        'Timer', S.TraceDuration,...
+        'StateChangeConditions', {'Tup', OutcomeState},...
+        'OutputActions', {'ValveModule1', 1,... % opens the blank valve, closes the odor valve
+            'BNC1', 1, 'BNC2', 1}); 
+    sma = AddState(sma, 'Name', 'Laser',...
+        'Timer', OptoStimDuration,...
+        'StateChangeConditions', {'Tup', 'ITI'},...
+        'OutputActions', {'WavePlayer1', LaserMessage, 'BNC1', 0, 'BNC2', 0});
     sma = AddState(sma, 'Name', 'ITI',...
         'Timer', ITIDuration,...
         'StateChangeConditions', {'Tup', 'exit'},...
-        'OutputActions', {'ValveModule1', 1,'BNC1', 0, 'BNC2', 0});
+        'OutputActions', {'BNC1', 0, 'BNC2', 0});
 
     % Add reward state so pokes plot doesn't get messed up:
     sma = AddState(sma,'Name','Reward','Timer',0,'StateChangeConditions',{},'OutputActions',{}); 
