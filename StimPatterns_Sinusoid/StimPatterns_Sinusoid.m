@@ -83,7 +83,7 @@ W.OutputRange = '0V:5V';
 % Stim patterns: 
 S.stimWaveforms = cell(S.NumPatterns,1);
 freq = [0.25 0.5 0.75];
-assert(numel(freq)==S.NumPatterns);
+assert(numel(freq)==S.NumPatterns-1); % 4 sec square is the last pattern
 t_end = 4;
 FR_min = 10;
 FR_max = 30;
@@ -93,7 +93,7 @@ t = (0:t_end*SR)/SR;
 FR_func_sinusoid = @(t, freq, A, offset)(-A*cos(2*pi*freq*t) + offset);
 
 for i = 1:numel(freq)
-    target = FR_func_sinusoid(t, t_end, freq(i), A, offset);
+    target = FR_func_sinusoid(t, freq(i), A, offset);
     waveform = PulseTrain(target, t, S.PulseDur);
 
     W.loadWaveform(i,waveform);
