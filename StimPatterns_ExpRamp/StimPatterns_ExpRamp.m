@@ -227,8 +227,9 @@ while t_curr < max(t)
     startIdx =  floor(t_curr * SR) + 1;
     endIdx = floor((t_curr+PulseDur) * SR);
 
-    if endIdx > numel(waveform)
+    if endIdx >= numel(waveform)
         endIdx = numel(waveform);
+        waveform = [waveform; zeros(endIdx-numel(waveform)+10,1)];
     end
     waveform(startIdx:endIdx) = 5;
     t_curr = t_next;

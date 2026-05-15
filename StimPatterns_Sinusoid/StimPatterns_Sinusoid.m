@@ -31,7 +31,7 @@ COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignor
 
 mouse = BpodSystem.Status.CurrentSubjectName;
 
-NumStimTrials = 3*40;
+NumStimTrials = 4*40;
 
 BpodSystem.Data.TaskDescription = 'StimTrials';
 
@@ -99,6 +99,14 @@ for i = 1:numel(freq)
     W.loadWaveform(i,waveform);
     S.stimWaveforms{i} = waveform;
 end
+
+
+% 3 sec at 20 Hz
+waveform_3secSquare_20Hz = zeros(1,round(SR/20));
+waveform_3secSquare_20Hz(1:(S.PulseDur * SR)) = 5;
+waveform_3secSquare_20Hz = repmat(waveform_3secSquare_20Hz,1,60);
+W.loadWaveform(S.NumPatterns,waveform_3secSquare_20Hz);
+S.stimWaveforms{S.NumPatterns} = waveform_3secSquare_20Hz;
 
 
 
@@ -224,8 +232,9 @@ while t_curr < max(t)
     startIdx =  floor(t_curr * SR) + 1;
     endIdx = floor((t_curr+PulseDur) * SR);
 
-    if endIdx > numel(waveform)
+    if endIdx >= numel(waveform)
         endIdx = numel(waveform);
+        waveform = [waveform; zeros(endIdx-numel(waveform)+10,1)];
     end
     waveform(startIdx:endIdx) = 5;
     t_curr = t_next;
