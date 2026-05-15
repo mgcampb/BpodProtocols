@@ -101,12 +101,12 @@ for i = 1:numel(freq)
 end
 
 
-% 3 sec at 20 Hz
-waveform_3secSquare_20Hz = zeros(1,round(SR/20));
-waveform_3secSquare_20Hz(1:(S.PulseDur * SR)) = 5;
-waveform_3secSquare_20Hz = repmat(waveform_3secSquare_20Hz,1,60);
-W.loadWaveform(S.NumPatterns,waveform_3secSquare_20Hz);
-S.stimWaveforms{S.NumPatterns} = waveform_3secSquare_20Hz;
+% 4 sec at 20 Hz
+waveform_4secSquare_20Hz = zeros(1,round(SR/20));
+waveform_4secSquare_20Hz(1:(S.PulseDur * SR)) = 5;
+waveform_4secSquare_20Hz = repmat(waveform_4secSquare_20Hz,1,80);
+W.loadWaveform(S.NumPatterns,waveform_4secSquare_20Hz);
+S.stimWaveforms{S.NumPatterns} = waveform_4secSquare_20Hz;
 
 
 
