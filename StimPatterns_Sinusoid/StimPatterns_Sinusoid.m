@@ -94,7 +94,9 @@ FR_func_sinusoid = @(t, freq, A, offset)(-A*cos(2*pi*freq*t) + offset);
 
 for i = 1:numel(freq)
     target = FR_func_sinusoid(t, freq(i), A, offset);
-    waveform = PulseTrain(target, t, S.PulseDur);
+    [waveform,pulsecount] = PulseTrain(target, t, S.PulseDur);
+
+    disp(pulsecount);
 
     W.loadWaveform(i,waveform);
     S.stimWaveforms{i} = waveform;
@@ -105,9 +107,11 @@ end
 waveform_4secSquare_20Hz = zeros(1,round(SR/20));
 waveform_4secSquare_20Hz(1:(S.PulseDur * SR)) = 5;
 waveform_4secSquare_20Hz = repmat(waveform_4secSquare_20Hz,1,80);
+waveform_4secSquare_20Hz = [waveform_4secSquare_20Hz 5*ones(1,S.PulseDur*SR) zeros(1,S.PulseDur*SR)]'; % to match the total number of pulses (81)
 W.loadWaveform(S.NumPatterns,waveform_4secSquare_20Hz);
 S.stimWaveforms{S.NumPatterns} = waveform_4secSquare_20Hz;
-
+pulsecount = sum(waveform_4secSquare_20Hz)/(5*S.PulseDur*SR);
+disp(pulsecount);
 
 
 % load messages to WavePlayer:
