@@ -41,7 +41,7 @@ S = BpodSystem.ProtocolSettings;
 % These parameters are shared across animals:
 S.Experimenter = 'Malcolm';
 S.Mouse = mouse;
-S.NumPatterns = 3;
+S.NumPatterns = 4;
 
 S.ITIMean = 15;
 S.ITIMin = 10;
