@@ -32,7 +32,7 @@ COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignor
 
 mouse = BpodSystem.Status.CurrentSubjectName;
 
-NumStimTrials = 6*30;
+NumStimTrials = 7*30;
 
 BpodSystem.Data.TaskDescription = 'StimTrials';
 
@@ -42,7 +42,7 @@ S = BpodSystem.ProtocolSettings;
 % These parameters are shared across animals:
 S.Experimenter = 'Malcolm';
 S.Mouse = mouse;
-S.NumPatterns = 6;
+S.NumPatterns = 7;
 
 S.ITIMean = 15; % 12;
 S.ITIMin = 10; % 8;
@@ -104,7 +104,13 @@ for i = 1:numel(gamma)
 end
 
 
-
+% 3 sec at 20 Hz
+waveform_3secSquare_20Hz = zeros(1,round(SR/20));
+waveform_3secSquare_20Hz(1:(S.PulseDur * SR)) = 5;
+waveform_3secSquare_20Hz = repmat(waveform_3secSquare_20Hz,1,60);
+W.loadWaveform(S.NumPatterns,waveform_3secSquare_20Hz);
+S.stimWaveforms{S.NumPatterns} = waveform_3secSquare_20Hz;
+pulsecount = sum(waveform_3secSquare_20Hz)/(5*S.PulseDur*SR);
 
 
 % load messages to WavePlayer:
