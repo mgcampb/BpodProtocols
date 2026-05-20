@@ -85,7 +85,7 @@ W.OutputRange = '0V:5V';
 % Stim patterns: 
 S.stimWaveforms = cell(S.NumPatterns,1);
 gamma = [0.02 0.1:0.1:0.5];
-assert(numel(gamma)==S.NumPatterns);
+assert(numel(gamma)==S.NumPatterns-1);
 t_end = 6;
 FR_min = 5;
 FR_max = 30;
