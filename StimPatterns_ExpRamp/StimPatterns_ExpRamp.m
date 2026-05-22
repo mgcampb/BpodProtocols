@@ -54,10 +54,6 @@ S.ForeperiodDuration = 0.5;
 S.StimPower_mW = input('Stim LED power (mW): ');
 S.PulseDur = 0.005;
 
-% display parameters
-fprintf('\nSession parameters:\n')
-S
-fprintf('NumStimTrials = %d\n',NumStimTrials);
 
 
 
@@ -132,6 +128,12 @@ for patternIdx = 1:S.NumPatterns
 end
 LoadSerialMessages('WavePlayer1', WavePlayerMessages);
 
+
+
+%% display parameters
+fprintf('\nSession parameters:\n')
+S
+fprintf('NumStimTrials = %d\n',NumStimTrials);
 
 
 
