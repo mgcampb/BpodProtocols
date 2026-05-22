@@ -85,8 +85,8 @@ W.OutputRange = '0V:5V';
 
 % Stim patterns: 
 S.stimWaveforms = cell(S.NumPatterns,1);
-gamma = [0.02 0.1:0.1:0.7];
-assert(numel(gamma)==S.NumPatterns);
+S.gamma = [0.02 0.1:0.1:0.7];
+assert(numel(S.gamma)==S.NumPatterns);
 t_end = 6;
 FR_min = 0;
 FR_max = 30;
@@ -95,8 +95,8 @@ t_exp = (0:t_end*SR)/SR;
 buffer_t = 0.1;
 t_tot = (0:(t_end+buffer_t)*SR)/SR;
 
-for i = 1:numel(gamma)
-    target = FR_func_expRamp(t_exp, t_end, gamma(i), FR_min, FR_max);
+for i = 1:numel(S.gamma)
+    target = FR_func_expRamp(t_exp, t_end, S.gamma(i), FR_min, FR_max);
     target = [target FR_max*ones(1,SR*buffer_t)];
     target = fliplr(target);
     waveform = PulseTrain(target, t_tot, S.PulseDur);
