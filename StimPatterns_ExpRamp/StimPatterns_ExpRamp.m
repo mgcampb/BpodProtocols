@@ -32,7 +32,7 @@ COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignor
 
 mouse = BpodSystem.Status.CurrentSubjectName;
 
-NumStimTrials = 7*30;
+NumStimTrials = 8*24;
 
 BpodSystem.Data.TaskDescription = 'StimTrials';
 
@@ -42,11 +42,12 @@ S = BpodSystem.ProtocolSettings;
 % These parameters are shared across animals:
 S.Experimenter = 'Malcolm';
 S.Mouse = mouse;
-S.NumPatterns = 7;
+S.NumPatterns = 8;
 
-S.ITIMean = 15; % 12;
-S.ITIMin = 10; % 8;
-S.ITIMax = 25; % 20;
+S.ITI_type = 'unif'; % 'unif' or 'exp'
+S.ITIMean = 18; % 12;
+S.ITIMin = 13; % 8;
+S.ITIMax = 23; % 20;
 S.RewardAmounts = [2 8];
 S.ForeperiodDuration = 0.5;
 
@@ -84,33 +85,43 @@ W.OutputRange = '0V:5V';
 
 % Stim patterns: 
 S.stimWaveforms = cell(S.NumPatterns,1);
-gamma = [0.02 0.1:0.1:0.5];
-assert(numel(gamma)==S.NumPatterns-1);
+gamma = [0.02 0.1:0.1:0.7];
+assert(numel(gamma)==S.NumPatterns);
 t_end = 6;
-FR_min = 5;
+FR_min = 0;
 FR_max = 30;
 FR_func_expRamp = @(t, t_end, gamma, FR_min, FR_max)((FR_max-FR_min)*exp((t_end-t)*log(gamma))+FR_min);
 t_exp = (0:t_end*SR)/SR;
-buffer_t = 0.2;
+buffer_t = 0.1;
 t_tot = (0:(t_end+buffer_t)*SR)/SR;
 
 for i = 1:numel(gamma)
     target = FR_func_expRamp(t_exp, t_end, gamma(i), FR_min, FR_max);
     target = [target FR_max*ones(1,SR*buffer_t)];
+    target = fliplr(target);
     waveform = PulseTrain(target, t_tot, S.PulseDur);
+    waveform = flipud(waveform);
 
     W.loadWaveform(i,waveform);
     S.stimWaveforms{i} = waveform;
 end
 
 
-% 3 sec at 20 Hz
-waveform_3secSquare_20Hz = zeros(1,round(SR/20));
-waveform_3secSquare_20Hz(1:(S.PulseDur * SR)) = 5;
-waveform_3secSquare_20Hz = repmat(waveform_3secSquare_20Hz,1,60);
-W.loadWaveform(S.NumPatterns,waveform_3secSquare_20Hz);
-S.stimWaveforms{S.NumPatterns} = waveform_3secSquare_20Hz;
-pulsecount = sum(waveform_3secSquare_20Hz)/(5*S.PulseDur*SR);
+% % 3 sec at 20 Hz
+% waveform_3secSquare_20Hz = zeros(1,round(SR/20));
+% waveform_3secSquare_20Hz(1:(S.PulseDur * SR)) = 5;
+% waveform_3secSquare_20Hz = repmat(waveform_3secSquare_20Hz,1,60);
+% W.loadWaveform(S.NumPatterns,waveform_3secSquare_20Hz);
+% S.stimWaveforms{S.NumPatterns} = waveform_3secSquare_20Hz;
+% pulsecount = sum(waveform_3secSquare_20Hz)/(5*S.PulseDur*SR);
+
+% 6 sec at 5 Hz
+% waveform_3secSquare_5Hz = zeros(1,round(SR/5));
+% waveform_3secSquare_5Hz(1:(S.PulseDur * SR)) = 5;
+% % waveform_3secSquare_5Hz = repmat(waveform_3secSquare_5Hz,1,30);
+% waveform_3secSquare_5Hz = repmat(waveform_3secSquare_5Hz,1,31); % one extra pulse at t = 6 to line up with the other patterns which have a buffer period of 0.2 sec
+% W.loadWaveform(S.NumPatterns,waveform_3secSquare_5Hz);
+% S.stimWaveforms{S.NumPatterns} = waveform_3secSquare_5Hz;
 
 
 % load messages to WavePlayer:
@@ -139,9 +150,13 @@ for currentTrial = 1:NumStimTrials
     LaserMessage = TrialType;
     
     % Calculate ITI for this trial
-    ITIDuration = exprnd(S.ITIMean-S.ITIMin) + S.ITIMin;
-    if ITIDuration > S.ITIMax
-        ITIDuration = S.ITIMax;
+    if strcmp(S.ITI_type,'exp')
+        ITIDuration = exprnd(S.ITIMean-S.ITIMin) + S.ITIMin;
+        if ITIDuration > S.ITIMax
+            ITIDuration = S.ITIMax;
+        end
+    elseif strcmp(S.ITI_type,'unif')
+        ITIDuration = unifrnd(S.ITIMin,S.ITIMax);
     end
     
     
