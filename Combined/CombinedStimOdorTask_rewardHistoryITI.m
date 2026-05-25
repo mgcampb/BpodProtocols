@@ -1,4 +1,4 @@
-function CombinedStimOdorTask
+function CombinedStimOdorTask_rewardHistoryITI
 
     % C. Chen 9/14/2025: Combined StimPatterns_FreeWater_7Patterns_Optotag and OdorWater_VariableDelay  
 
@@ -30,7 +30,7 @@ function CombinedStimOdorTask
     
     mouse = BpodSystem.Status.CurrentSubjectName;
     
-    BpodSystem.Data.TaskDescription = 'CombinedStimOdorTask';
+    BpodSystem.Data.TaskDescription = 'CombinedStimOdorTask_rewardHistoryITI';
     
     % Task parameters
     S = BpodSystem.ProtocolSettings; % contains valve order for this mouse in field OdorValvesOdor
@@ -48,7 +48,7 @@ function CombinedStimOdorTask
     %% These parameters are shared across animals:
     S.Experimenter = 'Carol';
     S.Mouse = mouse;
-    S.ProtocolName = 'CombinedStimOdorTask';
+    S.ProtocolName = 'CombinedStimOdorTask_rewardHistoryITI';
     
     %% Odor parameters
     S.ForeperiodDuration = 0.5; % seconds
@@ -67,14 +67,18 @@ function CombinedStimOdorTask
     S.RewardAmount = 4; % in uL; same for all odors
     
 
-    S.TargetTrialDuration_odor = 14; % seconds, tune this
-    S.ITIJitter_odor = 1.5;            % random +/- jitter
+    S.TargetRewardInterval_odor = 14.7; % seconds/reward; 147 trials is about 36 min
+    S.ITIMean_odor = 10.2;              % baseline ITI before reward-rate correction
+    S.ITIJitter_odor = 2;               % random +/- jitter
     S.ITIMin_odor = 5;
     S.ITIMax_odor = 13;
+    S.ITIRateGain_odor = 0.2;           % how strongly recent reward rate adjusts ITI
+    S.ITIMaxCorrection_odor = 2;        % max +/- seconds added by reward-rate correction
 
     
     %% Parameters from StimPatterns_FreeWater_7Pattern.m
     S.NumPatterns = 3;
+    S.StimDurations = [2 2 3]; % seconds; must match loaded stim waveforms
     
     % Num trials
 %     S.NumOptotagTrials1 = 60;
@@ -150,7 +154,7 @@ function CombinedStimOdorTask
     %% LED 
     LED_waveform = [ones(1, SR*S.TrialStartSignal) * 5, zeros(1, SR*0.01)]; % 5V for TrialStartSignal duration, then 0V briefly
     W.loadWaveform(5, LED_waveform); % Add waveform to channel 3, index 1
-    channel = 4;
+    channel = 3;
     
     % load waveforms to WavePlayer:
     WavePlayerMessages = {};
@@ -245,12 +249,12 @@ function CombinedStimOdorTask
         'ITI',              [0.92 0.92 0.92]);     % gray
     
     OdorWaterTrialVisualizer('init', state_colors); % only plot available states
-%     PokesPlotLicksSlow('init', state_colors, []);
+    % PokesPlotLicksSlow('init', state_colors, []);
     %% Start Protocol
 
     %%  Turn on red lamps
     RedLampOn = 0;
-    if S.NumOptotagTrials1 ~= 0
+    if S.NumOptotagTrials1 ~= 0 || S.NumStimTrials1 ~= 0
         while ~RedLampOn
             answer = questdlg('Is the Red Lamp ON?', ...
             'Yes','No');
@@ -358,7 +362,7 @@ function CombinedStimOdorTask
             'OutputActions', {'BNC1', 1, 'BNC2',1}); % BNC1 for sync pulse
         for tt = 1:S.NumPatterns
             sma = AddState(sma, 'Name', sprintf('Stim%d',tt),...
-                'Timer', 3,... % Assuming 2 seconds for stim duration, adjust if necessary
+                'Timer', S.StimDurations(TrialType),...
                 'StateChangeConditions', {'Tup', 'ITI'},...
                 'OutputActions', {'WavePlayer1', LaserMessage, 'BNC1', 0, 'BNC2',0}); 
         end
@@ -399,7 +403,7 @@ function CombinedStimOdorTask
     toc;
     %%
     % Turn off red lamps
-    if S.NumOptotagTrials1 ~= 0
+    if S.NumOptotagTrials1 ~= 0 || S.NumStimTrials1 ~= 0
         RedLampOff = 0;
         while ~RedLampOff
             answer = questdlg('Is the Red Lamp OFF?', ...
@@ -416,7 +420,8 @@ function CombinedStimOdorTask
         pause(3);
     end
     %% Odor trials
-    tic
+    OdorBlockTimer = tic;
+    RewardsDelivered_odor = 0;
     AccumulatedReward = 0;
     for currentTrial = 1:S.NumOdorTrials
         total_trial_ctr = total_trial_ctr+1;
@@ -432,33 +437,26 @@ function CombinedStimOdorTask
     
         ValveMessage = TrialType+1; % Determines odor for each trial type
         
-        % Calculate ITI for this trial
-        if TrialType == 0
-            plannedTrialBody = S.ForeperiodDuration + RewardValveTime;
-        else
-            plannedTrialBody = S.ForeperiodDuration + ...
-                S.TrialStartSignal + ...
-                S.OdorDelay + ...
-                S.OdorDuration + ...
-                RewardDelays_Odor(currentTrial) + ...
-                RewardValveTime;
-        end
+        % Calculate ITI from recent reward history, not the current odor identity.
+        elapsedSoFar = toc(OdorBlockTimer);
+        targetElapsedSoFar = RewardsDelivered_odor * S.TargetRewardInterval_odor;
+        rewardClockError = targetElapsedSoFar - elapsedSoFar;
 
-        ITIDuration = S.TargetTrialDuration_odor - plannedTrialBody;
-        
-        % Add jitter so trials are not perfectly periodic
-        ITIDuration = ITIDuration + (2*rand() - 1) * S.ITIJitter_odor;
-        
-        % Keep ITI within allowed bounds
+        rateCorrection = S.ITIRateGain_odor * rewardClockError;
+        rateCorrection = max(-S.ITIMaxCorrection_odor, ...
+            min(S.ITIMaxCorrection_odor, rateCorrection));
+
+        ITIJitter = (2*rand() - 1) * S.ITIJitter_odor;
+        ITIDuration = S.ITIMean_odor + rateCorrection + ITIJitter;
         ITIDuration = max(S.ITIMin_odor, min(S.ITIMax_odor, ITIDuration));
         
         % Display trial type
         if TrialType==0
-            fprintf('\tTrial %d: TrialType=%d Free TotalReward=%d ITI=%0.1fs\n',...
-                currentTrial,TrialType,AccumulatedReward,ITIDuration);
+            fprintf('\tTrial %d: TrialType=%d Free TotalReward=%d ITI=%0.1fs RateCorr=%+0.1fs\n',...
+                currentTrial,TrialType,AccumulatedReward,ITIDuration,rateCorrection);
         else
-            fprintf('\tTrial %d: TrialType=%d Odor=%d TotalReward=%d ITI=%0.1fs\n',...
-                currentTrial,TrialType,S.OdorValvesOrder(TrialType),AccumulatedReward,ITIDuration);
+            fprintf('\tTrial %d: TrialType=%d Odor=%d TotalReward=%d ITI=%0.1fs RateCorr=%+0.1fs\n',...
+                currentTrial,TrialType,S.OdorValvesOrder(TrialType),AccumulatedReward,ITIDuration,rateCorrection);
         end
         
         % Create state matrix
@@ -520,10 +518,16 @@ function CombinedStimOdorTask
         if ~isempty(fieldnames(RawEvents))
             % Save trial data
             BpodSystem.Data = AddTrialEvents(BpodSystem.Data, RawEvents);
+            RewardsDelivered_odor = RewardsDelivered_odor + 1;
             BpodSystem.Data.TrialSettings(total_trial_ctr) = S;
-            % BpodSystem.Data.TrialTypes(total_trial_ctr) = TrialType;
+            BpodSystem.Data.TrialTypes(total_trial_ctr) = TrialType;
             BpodSystem.Data.TrialTypes_Odor(currentTrial) = TrialType;
             BpodSystem.Data.AccumulatedReward(total_trial_ctr) = AccumulatedReward; 
+            BpodSystem.Data.RewardsDelivered_odor(total_trial_ctr) = RewardsDelivered_odor;
+            BpodSystem.Data.ITIDuration(total_trial_ctr) = ITIDuration;
+            BpodSystem.Data.ITIJitter(total_trial_ctr) = ITIJitter;
+            BpodSystem.Data.RewardClockError(total_trial_ctr) = rewardClockError;
+            BpodSystem.Data.ITIRateCorrection(total_trial_ctr) = rateCorrection;
             if TrialType==0
                 BpodSystem.Data.OdorID(total_trial_ctr) = nan;
             else
@@ -544,13 +548,13 @@ function CombinedStimOdorTask
             return
         end
     end
-    toc;
+    toc(OdorBlockTimer);
     
     fprintf('\nOdor trials finished\n');
     
     pause(2);
     %%
-    if S.NumOptotagTrials1 ~= 0
+    if S.NumOptotagTrials2 ~= 0 || S.NumStimTrials2 ~= 0
         % Turn on red lamps
         RedLampOn = 0;
         while ~RedLampOn
@@ -603,7 +607,7 @@ function CombinedStimOdorTask
             'OutputActions', {'BNC1', 1, 'BNC2',1}); 
         for tt = 1:S.NumPatterns
             sma = AddState(sma, 'Name', sprintf('Stim%d',tt),...
-                'Timer', 3,... % Assuming 2 seconds for stim duration, adjust if necessary
+                'Timer', S.StimDurations(TrialType),...
                 'StateChangeConditions', {'Tup', 'ITI'},...
                 'OutputActions', {'WavePlayer1', LaserMessage, 'BNC1', 0, 'BNC2',0}); 
         end
@@ -707,16 +711,18 @@ function CombinedStimOdorTask
     
     
     % Turn off red lamps
-    RedLampOff = 0;
-    while ~RedLampOff
-        answer = questdlg('Is the Red Lamp OFF?', ...
-        'Yes','No');
-        switch answer
-            case 'Yes'
-                RedLampOff = 1;
-            case 'No'
-                disp('Please turn on red lamp')
-                RedLampOff = 0;
+    if S.NumOptotagTrials2 ~= 0 || S.NumStimTrials2 ~= 0
+        RedLampOff = 0;
+        while ~RedLampOff
+            answer = questdlg('Is the Red Lamp OFF?', ...
+            'Yes','No');
+            switch answer
+                case 'Yes'
+                    RedLampOff = 1;
+                case 'No'
+                    disp('Please turn off red lamp')
+                    RedLampOff = 0;
+            end
         end
     end
     
