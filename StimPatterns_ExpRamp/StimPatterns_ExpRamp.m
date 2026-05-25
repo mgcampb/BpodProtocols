@@ -93,7 +93,7 @@ S.buffer_t = 0.1;
 t_tot = (0:(S.t_end+S.buffer_t)*SR)/SR;
 
 for i = 1:numel(S.gamma)
-    target = FR_func_expRamp(t_exp, S.t_end, S.gamma(i), S.FR_min, FS.FR_max);
+    target = FR_func_expRamp(t_exp, S.t_end, S.gamma(i), S.FR_min, S.FR_max);
     target = [target S.FR_max*ones(1,SR*S.buffer_t)];
     target = fliplr(target);
     waveform = PulseTrain(target, t_tot, S.PulseDur);
