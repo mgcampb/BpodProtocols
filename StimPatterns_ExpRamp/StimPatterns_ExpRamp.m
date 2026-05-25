@@ -50,6 +50,7 @@ S.ITIMin = 13; % 8;
 S.ITIMax = 23; % 20;
 % S.RewardAmounts = [2 8];
 S.ForeperiodDuration = 0.5;
+S.StimStateDuration = 2; % should match the length of the stim pattern; I put 2 here to be consistent with a previous run, will change to 6
 
 S.StimPower_mW = input('Stim LED power (mW): ');
 S.PulseDur = 0.005;
@@ -175,7 +176,7 @@ for currentTrial = 1:NumStimTrials
         'OutputActions', {'BNC1', 1, 'BNC2', 1});
     for tt = 1:S.NumPatterns
         sma = AddState(sma, 'Name', sprintf('Stim%d',tt),...
-            'Timer', S.t_end,...
+            'Timer', S.StimStateDuration,...
             'StateChangeConditions', {'Tup', 'ITI'},...
             'OutputActions', {'WavePlayer1', LaserMessage, 'BNC1', 0, 'BNC2', 0}); 
     end
