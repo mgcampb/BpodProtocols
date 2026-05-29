@@ -32,7 +32,7 @@ COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignor
 
 mouse = BpodSystem.Status.CurrentSubjectName;
 
-NumStimTrials = 8*24; % NumStimTrials = 7*30;
+NumStimTrials = 10 * 15; % 8*24; % NumStimTrials = 7*30;
 
 BpodSystem.Data.TaskDescription = 'StimTrials';
 
@@ -42,7 +42,7 @@ S = BpodSystem.ProtocolSettings;
 % These parameters are shared across animals:
 S.Experimenter = 'Malcolm';
 S.Mouse = mouse;
-S.NumPatterns = 8; % S.NumPatterns = 7;
+S.NumPatterns = 10; % 8; % S.NumPatterns = 7;
 
 S.ITI_type = 'unif'; % 'unif' or 'exp'
 S.ITIMean = 18; % 12;
@@ -50,7 +50,7 @@ S.ITIMin = 13; % 8;
 S.ITIMax = 23; % 20;
 % S.RewardAmounts = [2 8];
 S.ForeperiodDuration = 0.5;
-S.StimStateDuration = 2; % should match the length of the stim pattern; I put 2 here to be consistent with a previous run, will change to 6
+S.StimStateDuration = 6; % 2; % should match the length of the stim pattern; I put 2 here to be consistent with a previous run, will change to 6
 
 S.StimPower_mW = input('Stim LED power (mW): ');
 S.PulseDur = 0.005;
@@ -83,9 +83,9 @@ W.OutputRange = '0V:5V';
 % Stim patterns: 
 S.stimWaveforms = cell(S.NumPatterns,1);
 S.gamma = [0.02 0.1:0.1:0.7]; % S.gamma = [0.02 0.1:0.1:0.5];
-assert(numel(S.gamma)==S.NumPatterns); % assert(numel(S.gamma)==S.NumPatterns-1);
+assert(numel(S.gamma)==S.NumPatterns-2); % assert(numel(S.gamma)==S.NumPatterns); % assert(numel(S.gamma)==S.NumPatterns-1);
 S.t_end = 6;
-S.FR_min = 0; % S.FR_min = 5;
+S.FR_min = 5; % 0;
 S.FR_max = 30;
 FR_func_expRamp = @(t, t_end, gamma, FR_min, FR_max)((FR_max-FR_min)*exp((t_end-t)*log(gamma))+FR_min);
 t_exp = (0:S.t_end*SR)/SR;
@@ -104,21 +104,21 @@ for i = 1:numel(S.gamma)
 end
 
 
-% % 3 sec at 20 Hz
-% waveform_3secSquare_20Hz = zeros(1,round(SR/20));
-% waveform_3secSquare_20Hz(1:(S.PulseDur * SR)) = 5;
-% waveform_3secSquare_20Hz = repmat(waveform_3secSquare_20Hz,1,60);
-% W.loadWaveform(S.NumPatterns,waveform_3secSquare_20Hz);
-% S.stimWaveforms{S.NumPatterns} = waveform_3secSquare_20Hz;
+% 3 sec at 20 Hz
+waveform_3secSquare_20Hz = zeros(1,round(SR/20));
+waveform_3secSquare_20Hz(1:(S.PulseDur * SR)) = 5;
+waveform_3secSquare_20Hz = repmat(waveform_3secSquare_20Hz,1,60);
+W.loadWaveform(S.NumPatterns-1,waveform_3secSquare_20Hz);
+S.stimWaveforms{S.NumPatterns-1} = waveform_3secSquare_20Hz;
 % pulsecount = sum(waveform_3secSquare_20Hz)/(5*S.PulseDur*SR);
 
-% %  6 sec at 5 Hz
-% waveform_3secSquare_5Hz = zeros(1,round(SR/5));
-% waveform_3secSquare_5Hz(1:(S.PulseDur * SR)) = 5;
-% % waveform_3secSquare_5Hz = repmat(waveform_3secSquare_5Hz,1,30);
-% waveform_3secSquare_5Hz = repmat(waveform_3secSquare_5Hz,1,31); % one extra pulse at t = 6 to line up with the other patterns which have a buffer period of 0.2 sec
-% W.loadWaveform(S.NumPatterns,waveform_3secSquare_5Hz);
-% S.stimWaveforms{S.NumPatterns} = waveform_3secSquare_5Hz;
+%  6 sec at 5 Hz
+waveform_3secSquare_5Hz = zeros(1,round(SR/5));
+waveform_3secSquare_5Hz(1:(S.PulseDur * SR)) = 5;
+% waveform_3secSquare_5Hz = repmat(waveform_3secSquare_5Hz,1,30);
+waveform_3secSquare_5Hz = repmat(waveform_3secSquare_5Hz,1,31); % one extra pulse at t = 6 to line up with the other patterns which have a buffer period of 0.2 sec
+W.loadWaveform(S.NumPatterns,waveform_3secSquare_5Hz);
+S.stimWaveforms{S.NumPatterns} = waveform_3secSquare_5Hz;
 
 
 % load messages to WavePlayer:
