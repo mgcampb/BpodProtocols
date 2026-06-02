@@ -32,7 +32,7 @@ COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignor
 
 mouse = BpodSystem.Status.CurrentSubjectName;
 
-NumStimTrials = 10 * 15; % 8*24; % NumStimTrials = 7*30;
+NumStimTrials = 8 * 16; % 10 * 15; % 8*24; % NumStimTrials = 7*30;
 
 BpodSystem.Data.TaskDescription = 'StimTrials';
 
@@ -42,7 +42,7 @@ S = BpodSystem.ProtocolSettings;
 % These parameters are shared across animals:
 S.Experimenter = 'Malcolm';
 S.Mouse = mouse;
-S.NumPatterns = 10; % 8; % S.NumPatterns = 7;
+S.NumPatterns = 8; % 10; % 7;
 
 S.ITI_type = 'unif'; % 'unif' or 'exp'
 S.ITIMean = 18; % 12;
@@ -82,7 +82,7 @@ W.OutputRange = '0V:5V';
 
 % Stim patterns: 
 S.stimWaveforms = cell(S.NumPatterns,1);
-S.gamma = [0.02 0.1:0.1:0.7]; % S.gamma = [0.02 0.1:0.1:0.5];
+S.gamma = [0.02 0.1:0.1:0.5]; % S.gamma = [0.02 0.1:0.1:0.7];
 assert(numel(S.gamma)==S.NumPatterns-2); % assert(numel(S.gamma)==S.NumPatterns); % assert(numel(S.gamma)==S.NumPatterns-1);
 S.t_end = 6;
 S.FR_min = 5; % 0;
