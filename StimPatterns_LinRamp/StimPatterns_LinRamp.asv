@@ -86,14 +86,18 @@ W.OutputRange = '0V:5V';
 S.stimWaveforms = cell(S.NumPatterns,1);
 S.gamma = [0.02 0.1:0.1:0.5]; % S.gamma = [0.02 0.1:0.1:0.7];
 assert(numel(S.gamma)==S.NumPatterns-2); % assert(numel(S.gamma)==S.NumPatterns); % assert(numel(S.gamma)==S.NumPatterns-1);
-
+S.t_end = 6;
+S.FR_min = 5; % 0;
+S.FR_max = 30;
+t_exp = (0:S.t_end*SR)/SR;
+S.buffer_t = 0.1;
+t_tot = (0:(S.t_end+S.buffer_t)*SR)/SR;
 
 stimWaveforms = load('stimWaveforms.mat');
-stimWaveforms = stimWaveforms.stimWaveforms;
-assert(numel(S.gamma) == numel(stimWaveforms));
+assert(numel(S.gamma) = numel(stimWaveforms));
 
 for i = 1:numel(stimWaveforms)
-    S.stimWaveforms{i} = stimWaveforms{i};
+    S.stimWaveforms{i} = waveform;
 end
 
 

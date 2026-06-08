@@ -48,22 +48,30 @@ FR_func_linRamp = @(t0)(max(S.FR_min,S.FR_min+(t_exp-t0)*(S.FR_max-S.FR_min)/(ma
 for i = 1:numel(S.gamma)
     target_exp = FR_func_expRamp(t_exp, S.t_end, S.gamma(i), S.FR_min, S.FR_max);
     tmin = fmincon(@(t0)(sum((FR_func_linRamp(t0)-target_exp).^2)),3,[],[],[],[],0,6);
-
-    figure; hold on;
     target_lin = FR_func_linRamp(tmin);
-    plot(t_exp,target_exp);
-    plot(t_exp,target_lin);
+
+    % figure; hold on;
+    % 
+    % plot(t_exp,target_exp);
+    % plot(t_exp,target_lin);
 
     target_lin = [target_lin S.FR_max*ones(1,SR*S.buffer_t)];
     target_lin = fliplr(target_lin);
     waveform = PulseTrain(target_lin, t_tot, S.PulseDur);
     waveform = flipud(waveform);
 
-    W.loadWaveform(i,waveform);
+
+    figure; hold on;
+    target_lin = FR_func_linRamp(tmin);
+    plot(t_tot,waveform);
+
+    % W.loadWaveform(i,waveform);
     S.stimWaveforms{i} = waveform;
 end
 
 
+stimWaveforms = S.stimWaveforms;
+save('stimWaveforms.mat','stimWaveforms');
 
 
 
