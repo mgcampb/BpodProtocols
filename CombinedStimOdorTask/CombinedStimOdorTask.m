@@ -59,7 +59,7 @@ function CombinedStimOdorTask
     OdorChunkSize = 49; % trials; chunk size in which to balance trial types
     S.NumOdorTrials = OdorChunkSize*3; % 147 trials in total, 3 free reward trials, 144 odor trials
     
-    S.RewardDelay = [0 1 2.5 5.5]; % one per odor
+    S.RewardDelay = [0 1 3.5 5.5]; % one per odor
     S.FracTrials_Odor = [12/OdorChunkSize 12/OdorChunkSize 12/OdorChunkSize 12/OdorChunkSize];
     S.FracTrials_Free = 1-sum(S.FracTrials_Odor); % fraction free reward trials = 1/49
 
