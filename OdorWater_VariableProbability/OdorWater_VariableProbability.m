@@ -35,7 +35,7 @@ COM_Ports = readtable('..\COM_Ports.txt'); % get COM ports from text file (ignor
 
 mouse = BpodSystem.Status.CurrentSubjectName;
 
-NumTrials = 140;
+NumTrials = 160;
 
 BpodSystem.Data.TaskDescription = 'OdorWater_VariableProbability';
 
@@ -58,9 +58,9 @@ S.Experimenter = 'Malcolm';
 S.Mouse = mouse;
 S.ForeperiodDuration = 0.5; % seconds
 S.OdorDuration = 1; % seconds
-S.TraceDuration = 0.5; % seconds
+S.TraceDuration = 1; % seconds
 
-S.RewardProbability = [0.8 0]; % one per odor
+S.RewardProbability = [1.0 0]; % one per odor
 assert(S.NumOdors == numel(S.RewardProbability),'RewardProbability must have same number of elements as there are odors'); % assert one reward probability per odor
 S.RewardAmount = 4; % in uL; same for all odors
 
