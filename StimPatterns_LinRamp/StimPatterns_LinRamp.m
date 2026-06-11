@@ -94,6 +94,7 @@ assert(numel(S.gamma) == numel(stimWaveforms));
 
 for i = 1:numel(stimWaveforms)
     S.stimWaveforms{i} = stimWaveforms{i};
+    W.loadWaveform(i,S.stimWaveforms{i});
 end
 
 
