@@ -1,0 +1,131 @@
+
+NumPatterns = 6;
+PulseDur = 0.005;
+
+% Stim patterns: 
+SR = 10000;
+stimWaveforms = cell(NumPatterns,1);
+gamma = [0.02 0.1:0.1:0.5]; % gamma = [0.02 0.1:0.1:0.7];
+assert(numel(gamma)==NumPatterns);
+t_end = 6;
+FR_min = 5; % 0;
+FR_max = 30;
+t_exp = (0:t_end*SR)/SR;
+buffer_t = 0.1;
+t_tot = (0:(t_end+buffer_t)*SR)/SR;
+
+FR_func_expRamp = @(t, t_end, gamma, FR_min, FR_max)((FR_max-FR_min)*exp((t_end-t)*log(gamma))+FR_min);
+
+
+n = [10 20 30 40 50 60];
+figure; hold on;
+for i = 1:numel(n)
+    waveform = superExpRamp(n(i),FR_max,FR_min,t_end,buffer_t,SR,PulseDur);
+    fr_smooth = gauss_smooth([waveform 0],0.05*SR)/(5*PulseDur);
+    plot(fr_smooth);
+    stimWaveforms{i} = waveform;
+end
+
+save('stimWaveforms_SuperExpRamp.mat','stimWaveforms');
+
+% figure; hold on;
+% for i = 1:numel(gamma)
+%     target_exp = FR_func_expRamp(t_exp, t_end, gamma(i), FR_min, FR_max);
+%     target_exp = [target_exp FR_max*ones(1,SR*buffer_t)];
+% 
+%     waveform_exp = flipud(PulseTrain(fliplr(target_exp), t_tot, PulseDur));
+% 
+%     fr_smooth = gauss_smooth([waveform_exp; 0],0.05*SR)/(5*PulseDur);
+%     plot(fr_smooth);
+% end
+
+
+
+
+
+function [waveform,pulse_count] = PulseTrain(target, t, PulseDur)
+
+% target = the target firing rate function
+% t = the time base, assumed to be (0:t_end*SR)/SR, in seconds
+% PulseDur = the duration of each pulse, in seconds
+
+% MGC 5/13/2026
+
+SR = round(1/mean(diff(t)));
+t_tmp = (0:max(t)*SR)/SR;
+assert(all(t==t_tmp));
+
+waveform = zeros(numel(t), 1);
+t_curr = t(1);
+pulse_count = 0;
+
+while t_curr < max(t)
+
+    FR_local = interp1(t,target,t_curr);
+    ipi = 1/FR_local;
+    FR_next = interp1(t,target,t_curr+ipi);
+    for i = 1:100
+        ipi = 1/((FR_local+FR_next)/2);
+        FR_next = interp1(t,target,t_curr+ipi);
+    end
+
+    t_next = t_curr + ipi;
+    startIdx =  floor(t_curr * SR) + 1;
+    endIdx = floor((t_curr+PulseDur) * SR);
+
+    if endIdx >= numel(waveform)
+        endIdx = numel(waveform);
+        waveform = [waveform; zeros(endIdx-numel(waveform)+10,1)];
+    end
+    waveform(startIdx:endIdx) = 5;
+    t_curr = t_next;
+    pulse_count = pulse_count + 1;
+
+end
+
+end
+
+
+
+function waveform = superExpRamp(n,FR_max,FR_min,t_end,buffer_t,SR,PulseDur)
+
+    IPI = logspace(log10(1/FR_max),log10(1/FR_min),n);
+    IPI_max = 1/FR_min;
+    IPI_min = 1/FR_max;
+    
+    dt = 1/SR;
+    t_tot = t_end+buffer_t;
+    t = 0:dt:t_tot;
+    
+    tpulse = 0;
+    for i = 1:numel(IPI)
+        tpulse = [tpulse tpulse(end)+IPI(i)*SR];
+    end
+    
+    
+    while tpulse(end)+IPI_max*SR+PulseDur*SR<t_end*SR
+        tpulse = [tpulse tpulse(end)+IPI_max*SR];
+    end
+    
+    tpulse = [SR*linspace(0,buffer_t-2*IPI_min,round(FR_max*buffer_t)-1) tpulse+(buffer_t-IPI_min)*SR];
+
+    waveform = waveformFromPulseTimes(tpulse,PulseDur*SR,t*SR);
+    waveform = fliplr(waveform);
+
+end
+
+function waveform = waveformFromPulseTimes(pulseTimes,pulseDur,t)
+
+    waveform = zeros(size(t));
+    dt = mean(diff(t));
+    nPulseSamples = round(pulseDur/dt);
+    PulseKernel = ones(nPulseSamples,1);
+
+    for i = 1:numel(pulseTimes)
+        [~,idx_this] = min(abs(t-pulseTimes(i)));
+        waveform(idx_this) = 5;
+    end
+
+    waveform = conv(waveform,PulseKernel);
+
+end
