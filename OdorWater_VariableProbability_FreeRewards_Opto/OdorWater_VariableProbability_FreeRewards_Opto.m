@@ -163,7 +163,6 @@ for ttIdx = 1:numel(TrialTypes_uniq)
 end
 
 OptoTrials(1:NumTrials_pre) = 0;
-keyboard;
 
 
 %% Pokes plot
