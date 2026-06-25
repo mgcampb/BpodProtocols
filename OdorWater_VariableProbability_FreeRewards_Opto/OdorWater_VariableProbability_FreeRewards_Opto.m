@@ -41,7 +41,7 @@ mouse = BpodSystem.Status.CurrentSubjectName;
 
 NumTrials_pre = 8; % trials before the opto trials to make sure behavior is re-established
 ChunkSize = 21; % trials; chunk size in which to balance trial types during the opto delivery
-NumTrials_opto = Chunksize*10; 
+NumTrials_opto = ChunkSize*10; 
 NumTrials_total = NumTrials_pre + NumTrials_opto;
 
 
