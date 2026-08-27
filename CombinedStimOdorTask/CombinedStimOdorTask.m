@@ -129,7 +129,7 @@ function CombinedStimOdorTask
     W.loadWaveform(2,waveform_3secSquare_20Hz);
     
     
-    % 3) LED 
+    % n+1) LED 
     LED_waveform = [ones(1, SR*S.TrialStartSignal) * 5, zeros(1, SR*0.01)]; % 5V for TrialStartSignal duration, then 0V briefly
     W.loadWaveform(3, LED_waveform); % Add waveform to channel 3, index 1
     if S.Rig == 1
