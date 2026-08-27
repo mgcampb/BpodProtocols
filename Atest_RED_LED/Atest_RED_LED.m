@@ -35,7 +35,7 @@ waveform_optotag = repmat(waveform_optotag,1,S.OptotagPulseNum);
 W.loadWaveform(1,waveform_optotag);
 
 WavePlayerMessages = {};
-redStim_idx = 1; % for triggering red LED
+redStim_idx = 2; % for triggering red LED
 
 WavePlayerMessages = [WavePlayerMessages {['P' 2^(redStim_idx-1) 0]}]; % send optotag message
 LoadSerialMessages('WavePlayer1', WavePlayerMessages);
