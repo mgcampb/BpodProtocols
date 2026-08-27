@@ -16,6 +16,7 @@ function OdorWater_VariableProbability_FreeRewards_Opto
 % M. Campbell 6/23/2026: Added opto stim throughout half of trials
     % NOTE: script assumes there are two odors, first is rewarded
     % (probabilistically) second is not rewarded
+% M. Campbell 8/27/2026: Added fraction of opto trials as a parameter
 
 global BpodSystem
 
@@ -81,6 +82,7 @@ S.FracTrials_Odor = [10/ChunkSize 10/ChunkSize]; % fraction trials per odor
 S.FracTrials_Free = 1-sum(S.FracTrials_Odor); % fraction free reward trials
 assert(S.NumOdors == numel(S.RewardProbability),'RewardProbability must have same number of elements as there are odors'); % assert one reward probability per odor
 S.RewardAmount = 4; % in uL; same for all odors
+S.FracTrials_Opto = 0.3; % fraction of trials with opto stim (excluded "pre" trials)
 
 S.ITIMean = 12;
 S.ITIMin = 8;
@@ -135,34 +137,61 @@ for chunkIdx = 1:NumChunks
 end
 
 
-%% Define opto tials
+%% Define opto trials
 
+assert(S.FracTrials_Opto >= 0 && S.FracTrials_Opto <= 1, ...
+    'S.FracTrials_Opto must be between 0 and 1.');
 
-% OptoTrials = repmat([0 1], 1, round(numel(TrialTypes)/2));
-
-OptoTrials = nan(size(TrialTypes));
+% Treat reward/omission outcomes as distinct trial types. Pre-trials are
+% never eligible for opto stimulation and are excluded from the fractions.
+OptoTrials = zeros(size(TrialTypes));
 TrialTypes_withRewardInfo = TrialTypes+10*RewardTrials;
-TrialTypes_uniq = unique(TrialTypes_withRewardInfo);
+eligible_idx = (NumTrials_pre+1):numel(TrialTypes);
+TrialTypes_uniq = unique(TrialTypes_withRewardInfo(eligible_idx));
 
 % TrialTypes_uniq are:
 %     1 = Odor1, unrewarded
 %     2 = Odor2, unrewarded
 %     10 = free reward
 %     11 = Odor 1, rewarded
-ChunkSize_opto = 2;
 for ttIdx = 1:numel(TrialTypes_uniq)
-    idx_this = find(TrialTypes_withRewardInfo==TrialTypes_uniq(ttIdx));
-    NumChunks_this = round(numel(idx_this)/ChunkSize_opto);
-    opto_chunk = repmat([0 1],1,round(ChunkSize_opto/2));
-    OptoTrials_this = [];
-    for chunkIdx = 1:NumChunks_this
-        shuf_idx = randperm(ChunkSize_opto);
-        OptoTrials_this = [OptoTrials_this opto_chunk(shuf_idx)];
-    end
-    OptoTrials(idx_this) = OptoTrials_this;
-end
+    idx_this = eligible_idx( ...
+        TrialTypes_withRewardInfo(eligible_idx)==TrialTypes_uniq(ttIdx));
+    % Use the nearest feasible integer number of opto trials for this type.
+    NumOpto_this = round(S.FracTrials_Opto*numel(idx_this));
 
-OptoTrials(1:NumTrials_pre) = 0;
+    % Start each chunk at its ideal (possibly fractional) opto count.
+    % Floors are assigned first; remaining opto trials go to chunks with
+    % the largest fractional remainders. Random ordering breaks ties.
+    idx_by_chunk = cell(1,NumChunks);
+    ideal_by_chunk = zeros(1,NumChunks);
+    for chunkIdx = 1:NumChunks
+        chunk_start = NumTrials_pre+(chunkIdx-1)*ChunkSize+1;
+        chunk_end = min(NumTrials_pre+chunkIdx*ChunkSize,numel(TrialTypes));
+        idx_by_chunk{chunkIdx} = idx_this( ...
+            idx_this>=chunk_start & idx_this<=chunk_end);
+        ideal_by_chunk(chunkIdx) = ...
+            S.FracTrials_Opto*numel(idx_by_chunk{chunkIdx});
+    end
+
+    NumOpto_by_chunk = floor(ideal_by_chunk);
+    NumOpto_remaining = NumOpto_this-sum(NumOpto_by_chunk);
+    tie_break_order = randperm(NumChunks);
+    [~,remainder_order] = sort( ...
+        ideal_by_chunk(tie_break_order)-floor(ideal_by_chunk(tie_break_order)), ...
+        'descend');
+    chunks_to_increment = tie_break_order( ...
+        remainder_order(1:NumOpto_remaining));
+    NumOpto_by_chunk(chunks_to_increment) = ...
+        NumOpto_by_chunk(chunks_to_increment)+1;
+
+    for chunkIdx = 1:NumChunks
+        idx_chunk_this = idx_by_chunk{chunkIdx};
+        NumOpto_chunk_this = NumOpto_by_chunk(chunkIdx);
+        OptoTrials(idx_chunk_this( ...
+            randperm(numel(idx_chunk_this),NumOpto_chunk_this))) = 1;
+    end
+end
 
 
 %% Pokes plot
