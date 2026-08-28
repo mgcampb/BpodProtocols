@@ -233,7 +233,6 @@ function CombinedStimOdorTask
     OdorWaterTrialVisualizer('init', state_colors); % only plot available states
 %     PokesPlotLicksSlow('init', state_colors, []);
     %% Start Protocol
-    pause(2)
 
     total_trial_ctr = 0;
     
@@ -290,7 +289,7 @@ function CombinedStimOdorTask
         end
     end
     
-    % pause(5);
+    pause(5);
     %% StimTrials1
     fprintf('\nStim trials1 (%d trials)\n', S.NumStimTrials1);
     for currentTrial = 1:S.NumStimTrials1
@@ -366,7 +365,10 @@ function CombinedStimOdorTask
     
     fprintf('Stim trials1 finished\n');
     toc;
-    % pause(5);
+
+%     input('Ready: ')
+    
+    pause(5);
     %% Odor trials
     tic
     AccumulatedReward = 0;
@@ -499,7 +501,7 @@ function CombinedStimOdorTask
     
     fprintf('\nOdor trials finished\n');
     
-    % pause(5);
+    pause(5);
     %% StimTrials2
     tic
     fprintf('\nStim trials2 (%d trials)\n', S.NumStimTrials2);
@@ -579,7 +581,7 @@ function CombinedStimOdorTask
     fprintf('Stim trials2 finished\n');
     
     
-    % pause(5);
+    pause(5);
     
     %% Optotag2
     

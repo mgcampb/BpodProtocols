@@ -82,7 +82,7 @@ S.FracTrials_Odor = [10/ChunkSize 10/ChunkSize]; % fraction trials per odor
 S.FracTrials_Free = 1-sum(S.FracTrials_Odor); % fraction free reward trials
 assert(S.NumOdors == numel(S.RewardProbability),'RewardProbability must have same number of elements as there are odors'); % assert one reward probability per odor
 S.RewardAmount = 4; % in uL; same for all odors
-S.FracTrials_Opto = 0.2; % fraction of trials with opto stim (excluded "pre" trials)
+S.FracTrials_Opto = 0.15; % fraction of trials with opto stim (excluded "pre" trials)
 
 S.ITIMean = 12;
 S.ITIMin = 8;
